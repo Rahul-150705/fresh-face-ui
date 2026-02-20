@@ -31,9 +31,9 @@ function SummaryView({ summary, onReset }: SummaryViewProps) {
   };
 
   const cards = [
-    { title: 'Key Concepts', icon: Lightbulb, items: keyPoints, color: 'text-primary', bg: 'bg-primary/10', bullet: 'bg-primary' },
-    { title: 'Important Definitions', icon: BookOpen, items: definitions, color: 'text-warning', bg: 'bg-warning/10', bullet: 'bg-warning' },
-    { title: 'Exam-Focused Takeaways', icon: Target, items: examPoints, color: 'text-success', bg: 'bg-success/10', bullet: 'bg-success' },
+    { title: 'Key Concepts', icon: Lightbulb, items: keyPoints, colorClass: 'text-primary', bgClass: 'bg-primary/10', bulletClass: 'bg-primary' },
+    { title: 'Important Definitions', icon: BookOpen, items: definitions, colorClass: 'text-accent', bgClass: 'bg-accent/10', bulletClass: 'bg-accent' },
+    { title: 'Exam-Focused Takeaways', icon: Target, items: examPoints, colorStyle: 'hsl(152 60% 42%)', bgStyle: 'hsla(152, 60%, 42%, 0.1)', bulletStyle: 'hsl(152 60% 42%)' },
   ];
 
   return (
@@ -83,7 +83,7 @@ function SummaryView({ summary, onReset }: SummaryViewProps) {
 
       {/* Cards */}
       <div className="grid gap-5">
-        {cards.map(({ title: cardTitle, icon: Icon, items, color, bg, bullet }, idx) => (
+        {cards.map(({ title: cardTitle, icon: Icon, items, colorClass, bgClass, bulletClass, colorStyle, bgStyle, bulletStyle }, idx) => (
           <motion.div
             key={cardTitle}
             initial={{ opacity: 0, y: 12 }}
@@ -92,9 +92,12 @@ function SummaryView({ summary, onReset }: SummaryViewProps) {
             className="bg-card rounded-xl border border-border overflow-hidden"
             style={{ boxShadow: 'var(--shadow-card)' }}
           >
-            <div className={`flex items-center gap-3 px-5 py-3.5 border-b border-border ${bg}`}>
-              <Icon className={`w-5 h-5 ${color}`} />
-              <span className={`font-semibold font-display ${color}`}>{cardTitle}</span>
+            <div
+              className={`flex items-center gap-3 px-5 py-3.5 border-b border-border ${bgClass || ''}`}
+              style={bgStyle ? { background: bgStyle } : undefined}
+            >
+              <Icon className={`w-5 h-5 ${colorClass || ''}`} style={colorStyle ? { color: colorStyle } : undefined} />
+              <span className={`font-semibold font-display ${colorClass || ''}`} style={colorStyle ? { color: colorStyle } : undefined}>{cardTitle}</span>
               {items.length > 0 && (
                 <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-foreground/10 text-foreground">
                   {items.length}
@@ -108,7 +111,10 @@ function SummaryView({ summary, onReset }: SummaryViewProps) {
                 <ul className="space-y-3">
                   {items.map((item, i) => (
                     <li key={i} className="flex items-start gap-3">
-                      <span className={`shrink-0 w-6 h-6 rounded-full ${bullet} text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5`}>
+                      <span
+                        className={`shrink-0 w-6 h-6 rounded-full text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5 ${bulletClass || ''}`}
+                        style={bulletStyle ? { background: bulletStyle } : undefined}
+                      >
                         {i + 1}
                       </span>
                       <span className="text-sm text-card-foreground leading-relaxed">{item}</span>
