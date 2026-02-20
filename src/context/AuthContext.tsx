@@ -24,6 +24,20 @@ const STORAGE_KEYS = {
   ACCESS_EXP:    'ta_access_exp',
 };
 
+/**
+ * Safely parse JSON from a Response object.
+ * Prevents "Unexpected end of JSON input" when backend returns empty body.
+ */
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text || text.trim() === '') return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user,        setUser]        = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -40,21 +54,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
   }, []);
 
-  const persistAuth = useCallback((authResponse: any) => {
-    const { accessToken: at, refreshToken, accessExpiresIn, email, fullName } = authResponse;
-    const userData = { email, fullName };
+  const scheduleTokenRefresh = useCallback((expiresInMs: number) => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    const delay = Math.max(expiresInMs - 60_000, 0);
+    refreshTimerRef.current = setTimeout(() => doRefresh(), delay);
+  }, []);
 
+  const persistAuth = useCallback((authResponse: any) => {
+    if (!authResponse) return;
+    const { accessToken: at, refreshToken, accessExpiresIn, email, fullName } = authResponse;
+    if (!at) return;
+
+    const userData = { email, fullName };
     setAccessToken(at);
     setUser(userData);
 
     sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, at);
     sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
     sessionStorage.setItem(STORAGE_KEYS.ACCESS_EXP, String(Date.now() + accessExpiresIn));
-
     localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
 
     scheduleTokenRefresh(accessExpiresIn);
-  }, []);
+  }, [scheduleTokenRefresh]);
 
   const doRefresh = useCallback(async () => {
     const storedRefresh = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
@@ -67,21 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ refreshToken: storedRefresh }),
       });
 
-      if (!res.ok) throw new Error('Refresh failed');
+      const data = await safeJson(res);
 
-      const data = await res.json();
+      if (!res.ok || !data) {
+        clearAuth();
+        return;
+      }
+
       persistAuth(data);
     } catch {
       clearAuth();
     }
   }, [clearAuth, persistAuth]);
 
-  const scheduleTokenRefresh = useCallback((expiresInMs: number) => {
-    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-    const delay = Math.max(expiresInMs - 60_000, 0);
-    refreshTimerRef.current = setTimeout(doRefresh, delay);
-  }, [doRefresh]);
-
+  // Hydration on page load
   useEffect(() => {
     const hydrate = async () => {
       const storedToken = sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -109,14 +129,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current); };
   }, [doRefresh, scheduleTokenRefresh]);
 
+  // ── Public API ─────────────────────────────────────────────────────────
+
   const login = async (email: string, password: string) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Login failed');
+
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Login failed (${res.status})`);
+    }
+    if (!data) {
+      throw new Error('Server returned an empty response.');
+    }
+
     persistAuth(data);
     return data;
   };
@@ -127,8 +157,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fullName, email, password }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Signup failed (${res.status})`);
+    }
+    if (!data) {
+      throw new Error('Server returned an empty response.');
+    }
+
     persistAuth(data);
     return data;
   };
