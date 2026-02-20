@@ -59,16 +59,16 @@ function UploadLecture({ onSummaryReady, onLoading, accessToken }: UploadLecture
     setLoading(true);
     setError('');
     onLoading(true);
-
-    try {
-      const summary = await uploadLectureForSummary(selectedFile, accessToken);
-      onSummaryReady(summary);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred. Please try again.');
-    } finally {
-      setLoading(false);
-      onLoading(false);
-    }
+try {
+    const summary = await uploadLectureForSummary(selectedFile, accessToken);
+    onSummaryReady(summary);
+    // ✅ Don't call onLoading(false) here — App.tsx handles state via onSummaryReady
+  } catch (err: any) {
+    setError(err.message || 'An unexpected error occurred. Please try again.');
+    onLoading(false);  // ✅ Only reset on error
+  } finally {
+    setLoading(false); // just resets the button spinner
+  }
   };
 
   const steps = [
