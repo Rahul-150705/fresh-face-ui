@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import UploadLecture from './components/UploadLecture';
 import SummaryView from './components/SummaryView';
 import { checkHealth } from './services/api';
+import LoadingAnimation from './components/LoadingAnimation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GraduationCap, LogOut, Bot } from 'lucide-react';
 
@@ -112,22 +113,7 @@ function AppContent() {
           )}
 
           {appState === 'loading' && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center py-20 gap-5"
-            >
-              <div className="spinner spinner-lg" />
-              <div className="text-center">
-                <h3 className="text-xl font-semibold font-display text-foreground mb-2">Generating your summary…</h3>
-                <p className="text-muted-foreground">Our AI is reading your lecture and extracting key insights</p>
-              </div>
-              <div className="progress-dots">
-                <span /><span /><span />
-              </div>
-            </motion.div>
+            <LoadingAnimation key="loading" />
           )}
 
           {appState === 'done' && summary && (
