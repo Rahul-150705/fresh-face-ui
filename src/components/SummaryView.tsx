@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 interface SummaryData {
+  lectureId?: string;
   title: string;
   overview?: string;
   keyPoints?: string[];
@@ -25,9 +26,10 @@ interface SummaryData {
 interface SummaryViewProps {
   summary: SummaryData;
   onReset: () => void;
+  onTakeQuiz?: () => void;
 }
 
-function SummaryView({ summary, onReset }: SummaryViewProps) {
+function SummaryView({ summary, onReset, onTakeQuiz }: SummaryViewProps) {
   const {
     title, overview, keyPoints = [], definitions = [], examPoints = [],
     detailedExplanation, furtherReading = [], markdownSummary,
@@ -180,6 +182,15 @@ function SummaryView({ summary, onReset }: SummaryViewProps) {
           >
             <ArrowLeft className="w-4 h-4" /> New Upload
           </button>
+          {onTakeQuiz && (
+            <button
+              onClick={onTakeQuiz}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary-foreground transition-opacity"
+              style={{ background: 'var(--gradient-brand)' }}
+            >
+              <Target className="w-4 h-4" /> Take Quiz
+            </button>
+          )}
         </div>
       </div>
 
