@@ -58,3 +58,35 @@ export async function checkHealth() {
   if (!response.ok) throw new Error('Backend service is unavailable.');
   return data;
 }
+
+/**
+ * Generate a quiz from a lecture.
+ */
+export async function generateQuiz(lectureId: string, accessToken: string, numQuestions = 10) {
+  const response = await fetch(`/api/quiz/${lectureId}/generate?numQuestions=${numQuestions}`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${accessToken}` },
+  });
+  const data = await safeJson(response);
+  if (!response.ok) throw new Error(data?.error || `Quiz generation failed (${response.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
+
+/**
+ * Submit quiz answers and get results.
+ */
+export async function submitQuizAnswers(lectureId: string, answers: string[], accessToken: string) {
+  const response = await fetch(`/api/quiz/${lectureId}/submit`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ answers }),
+  });
+  const data = await safeJson(response);
+  if (!response.ok) throw new Error(data?.error || `Quiz submission failed (${response.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}

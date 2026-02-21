@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import UploadLecture from './components/UploadLecture';
 import SummaryView from './components/SummaryView';
+import QuizView from './components/QuizView';
 import { checkHealth } from './services/api';
 import LoadingAnimation from './components/LoadingAnimation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,7 +14,7 @@ function AppContent() {
   const { isAuthenticated, isLoading, user, logout, accessToken } = useAuth();
 
   const [authView, setAuthView] = useState<'login' | 'signup'>('login');
-  const [appState, setAppState] = useState<'idle' | 'loading' | 'done'>('idle');
+  const [appState, setAppState] = useState<'idle' | 'loading' | 'done' | 'quiz'>('idle');
   const [summary, setSummary] = useState<any>(null);
   const [provider, setProvider] = useState<string | null>(null);
 
@@ -117,7 +118,22 @@ function AppContent() {
           )}
 
           {appState === 'done' && summary && (
-            <SummaryView key="summary" summary={summary} onReset={handleReset} />
+            <SummaryView
+              key="summary"
+              summary={summary}
+              onReset={handleReset}
+              onTakeQuiz={summary.lectureId ? () => setAppState('quiz') : undefined}
+            />
+          )}
+
+          {appState === 'quiz' && summary?.lectureId && (
+            <QuizView
+              key="quiz"
+              lectureId={summary.lectureId}
+              lectureTitle={summary.title || 'Lecture'}
+              accessToken={accessToken!}
+              onBack={() => setAppState('done')}
+            />
           )}
         </AnimatePresence>
       </main>
