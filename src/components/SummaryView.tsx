@@ -27,9 +27,10 @@ interface SummaryViewProps {
   summary: SummaryData;
   onReset: () => void;
   onTakeQuiz?: () => void;
+  onAskQuestions?: () => void;
 }
 
-function SummaryView({ summary, onReset, onTakeQuiz }: SummaryViewProps) {
+function SummaryView({ summary, onReset, onTakeQuiz, onAskQuestions }: SummaryViewProps) {
   const {
     title, overview, keyPoints = [], definitions = [], examPoints = [],
     detailedExplanation, furtherReading = [], markdownSummary,
@@ -182,11 +183,19 @@ function SummaryView({ summary, onReset, onTakeQuiz }: SummaryViewProps) {
           >
             <ArrowLeft className="w-4 h-4" /> New Upload
           </button>
+          {onAskQuestions && (
+            <button
+              onClick={onAskQuestions}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary-foreground transition-opacity"
+              style={{ background: 'var(--gradient-brand)' }}
+            >
+              <BookOpen className="w-4 h-4" /> Ask Questions
+            </button>
+          )}
           {onTakeQuiz && (
             <button
               onClick={onTakeQuiz}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary-foreground transition-opacity"
-              style={{ background: 'var(--gradient-brand)' }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
             >
               <Target className="w-4 h-4" /> Take Quiz
             </button>
