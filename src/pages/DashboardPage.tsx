@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, LogOut, Bot, FileText, Clock, Trash2, ChevronRight,
-  History, AlertCircle, Loader2
+  History, AlertCircle, Loader2, MessageSquare, Brain
 } from 'lucide-react';
 import UploadLecture from '../components/UploadLecture';
 import SummaryView from '../components/SummaryView';
@@ -26,9 +26,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (accessToken) {
-      checkHealth()
-        .then(d => setProvider(d.provider))
-        .catch(() => setProvider('openai'));
+      checkHealth().then(d => setProvider(d.provider)).catch(() => setProvider('openai'));
     }
   }, [accessToken]);
 
@@ -36,24 +34,16 @@ export default function DashboardPage() {
     if (!accessToken) return;
     setHistoryLoading(true);
     setHistoryError('');
-    try {
-      const data = await getLectureHistory(accessToken);
-      setHistory(data);
-    } catch (e: any) {
-      setHistoryError(e.message || 'Failed to load history');
-    } finally {
-      setHistoryLoading(false);
-    }
+    try { setHistory(await getLectureHistory(accessToken)); }
+    catch (e: any) { setHistoryError(e.message || 'Failed to load history'); }
+    finally { setHistoryLoading(false); }
   }, [accessToken]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
   const handleDelete = async (id: string) => {
     if (!accessToken) return;
-    try {
-      await deleteLecture(id, accessToken);
-      setHistory(prev => prev.filter(h => h.id !== id));
-    } catch {}
+    try { await deleteLecture(id, accessToken); setHistory(prev => prev.filter(h => h.id !== id)); } catch {}
   };
 
   const handleLoading = (v: boolean) => setAppState(v ? 'loading' : 'idle');
@@ -61,28 +51,38 @@ export default function DashboardPage() {
   const handleReset = () => { setSummary(null); setAppState('idle'); };
 
   const providerLabel = (p: string | null) =>
-    ({ openai: 'OpenAI GPT-4', claude: 'Anthropic Claude', gemini: 'Google Gemini' } as Record<string, string>)[p?.toLowerCase() || ''] || p;
+    ({ openai: 'OpenAI GPT-4', claude: 'Anthropic Claude', gemini: 'Google Gemini', ollama: 'Ollama Local' } as Record<string, string>)[p?.toLowerCase() || ''] || p;
 
   const formatDate = (iso: string) => {
-    try {
-      return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-    } catch { return iso; }
+    try { return new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch { return iso; }
   };
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Ambient background effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-[0.03]" style={{ background: 'hsl(263 70% 50%)' }} />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-[0.03]" style={{ background: 'hsl(217 91% 60%)' }} />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-50 glass-card border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-brand)' }}>
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-display font-bold text-lg text-foreground hidden sm:inline">AI Teaching Assistant</span>
+            <span className="font-bold text-lg text-foreground hidden sm:inline">AI Teaching Assistant</span>
           </div>
           <div className="flex items-center gap-3">
+            {provider && (
+              <div className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+                <Bot className="w-3.5 h-3.5" /> {providerLabel(provider)}
+              </div>
+            )}
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-primary-foreground" style={{ background: 'var(--gradient-brand)' }}>
                 {user?.fullName?.[0]?.toUpperCase() || '?'}
               </div>
               <span className="text-sm font-medium text-foreground hidden sm:inline">{user?.fullName}</span>
@@ -94,22 +94,17 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left: Upload + Summary area */}
           <div className="lg:col-span-2">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-              <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground mb-2">
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-foreground mb-2">
                 {appState === 'idle' ? 'Upload & Summarize' : appState === 'quiz' ? 'Quiz Mode' : 'Summary'}
               </h1>
               <p className="text-muted-foreground text-lg">
                 Upload your lecture PDF and get an AI-powered structured summary instantly
               </p>
-              {provider && (
-                <div className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                  <Bot className="w-3.5 h-3.5" /> Powered by {providerLabel(provider)}
-                </div>
-              )}
             </motion.div>
 
             <AnimatePresence mode="wait">
@@ -134,10 +129,10 @@ export default function DashboardPage() {
 
           {/* Right: Lecture History sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-card rounded-xl border border-border p-5 sticky top-20" style={{ boxShadow: 'var(--shadow-card)' }}>
+            <div className="glass-card p-5 sticky top-20">
               <div className="flex items-center gap-2 mb-4">
                 <History className="w-5 h-5 text-primary" />
-                <h2 className="font-display font-bold text-foreground">Lecture History</h2>
+                <h2 className="font-bold text-foreground">Lecture History</h2>
               </div>
 
               {historyLoading ? (
@@ -157,7 +152,7 @@ export default function DashboardPage() {
                       key={item.id}
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="group flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer"
+                      className="group flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-primary/[0.03] transition-all cursor-pointer"
                       onClick={() => navigate(`/lecture/${item.id}`)}
                     >
                       <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -189,8 +184,8 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <footer className="text-center py-6 text-xs text-muted-foreground border-t border-border">
-        AI Teaching Assistant v1.0 · {new Date().getFullYear()}
+      <footer className="text-center py-6 text-xs text-muted-foreground border-t border-border/50">
+        AI Teaching Assistant · {new Date().getFullYear()}
       </footer>
     </div>
   );

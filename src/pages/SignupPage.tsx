@@ -7,7 +7,7 @@ interface SignupPageProps {
   onNavigateLogin: () => void;
 }
 
-function SignupPage({ onNavigateLogin }: SignupPageProps) {
+export default function SignupPage({ onNavigateLogin }: SignupPageProps) {
   const { signup } = useAuth();
   const [form, setForm] = useState({ fullName: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -34,25 +34,20 @@ function SignupPage({ onNavigateLogin }: SignupPageProps) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-
     setLoading(true);
-    try {
-      await signup(form.fullName, form.email, form.password);
-    } catch (err: any) {
-      setApiError(err.message || 'Signup failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    try { await signup(form.fullName, form.email, form.password); }
+    catch (err: any) { setApiError(err.message || 'Signup failed.'); }
+    finally { setLoading(false); }
   };
 
   const getStrength = (p: string) => {
-    let score = 0;
-    if (p.length >= 8) score++;
-    if (p.length >= 12) score++;
-    if (/[A-Z]/.test(p)) score++;
-    if (/[0-9]/.test(p)) score++;
-    if (/[^A-Za-z0-9]/.test(p)) score++;
-    return score;
+    let s = 0;
+    if (p.length >= 8) s++;
+    if (p.length >= 12) s++;
+    if (/[A-Z]/.test(p)) s++;
+    if (/[0-9]/.test(p)) s++;
+    if (/[^A-Za-z0-9]/.test(p)) s++;
+    return s;
   };
 
   const score = getStrength(form.password);
@@ -74,31 +69,26 @@ function SignupPage({ onNavigateLogin }: SignupPageProps) {
       {/* Left brand panel */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12"
         style={{ background: 'var(--gradient-hero)' }}>
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full bg-primary/30 blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-accent/20 blur-3xl" />
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full blur-3xl" style={{ background: 'hsl(263 70% 50% / 0.15)' }} />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl" style={{ background: 'hsl(217 91% 60% / 0.1)' }} />
         </div>
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-          className="relative z-10 max-w-md"
-        >
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="relative z-10 max-w-md">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/10 backdrop-blur flex items-center justify-center">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'var(--gradient-brand)' }}>
               <GraduationCap className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold font-display text-primary-foreground mb-4 leading-tight">
+          <h1 className="text-4xl font-extrabold text-primary-foreground mb-4 leading-tight">
             AI Teaching<br />Assistant
           </h1>
-          <p className="text-primary-foreground/70 text-lg mb-10 leading-relaxed">
-            Join thousands of students studying smarter with AI-powered lecture summaries.
+          <p className="text-primary-foreground/60 text-lg mb-10 leading-relaxed">
+            Join thousands of students studying smarter with AI-powered lecture tools.
           </p>
           <div className="space-y-4">
             {features.map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3 text-primary-foreground/80">
-                <div className="w-9 h-9 rounded-lg bg-primary-foreground/10 flex items-center justify-center">
+              <div key={text} className="flex items-center gap-3 text-primary-foreground/70">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <span className="text-sm font-medium">{text}</span>
@@ -110,18 +100,15 @@ function SignupPage({ onNavigateLogin }: SignupPageProps) {
 
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background overflow-y-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="w-full max-w-md"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <GraduationCap className="w-7 h-7 text-primary" />
-            <span className="font-display font-bold text-xl text-foreground">AI Teaching Assistant</span>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-brand)' }}>
+              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="font-bold text-xl text-foreground">AI Teaching Assistant</span>
           </div>
 
-          <h2 className="text-2xl font-bold font-display text-foreground mb-2">Create your account</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Create your account</h2>
           <p className="text-muted-foreground mb-8">Get started — it only takes a minute</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -185,7 +172,7 @@ function SignupPage({ onNavigateLogin }: SignupPageProps) {
             <button type="submit" disabled={loading}
               className="w-full py-3 rounded-lg font-semibold text-primary-foreground transition-all disabled:opacity-50 hover:shadow-lg"
               style={{ background: loading ? 'hsl(var(--primary) / 0.7)' : 'var(--gradient-brand)' }}>
-              {loading ? (<><span className="btn-spinner" /> Creating account…</>) : ('Create account →')}
+              {loading ? <><span className="btn-spinner" /> Creating account…</> : 'Create account →'}
             </button>
           </form>
 
@@ -198,5 +185,3 @@ function SignupPage({ onNavigateLogin }: SignupPageProps) {
     </div>
   );
 }
-
-export default SignupPage;
