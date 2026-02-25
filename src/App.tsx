@@ -7,7 +7,6 @@ import LectureDetailPage from './pages/LectureDetailPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -18,7 +17,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
