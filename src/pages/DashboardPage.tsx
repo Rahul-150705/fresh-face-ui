@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import SmartUploadPanel from '../components/SmartUploadPanel';
 import SummaryView from '../components/SummaryView';
-import StreamingSummaryView from '../components/StreamingSummaryView';
+import ChatView from '../components/chat/ChatView';
 import QuizView from '../components/QuizView';
 import LoadingAnimation from '../components/LoadingAnimation';
 import FlashcardModal from '../components/FlashcardModal';
@@ -494,9 +494,9 @@ export default function DashboardPage() {
                             )}
 
                             {/* ── Main grid: Upload + Sidebar ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className={`grid grid-cols-1 ${appState === 'streaming' ? '' : 'lg:grid-cols-3'} gap-8`}>
                                 {/* Upload / Summary / Streaming / Quiz panel */}
-                                <div className="lg:col-span-2 space-y-5">
+                                <div className={`${appState === 'streaming' ? '' : 'lg:col-span-2'} space-y-5`}>
                                     {appState === 'idle' && (
                                         <div>
                                             <h1 className="text-3xl font-extrabold text-foreground mb-1">
@@ -523,78 +523,26 @@ export default function DashboardPage() {
 
                                         {appState === 'loading' && <LoadingAnimation key="loading" />}
 
-                                        {/* ── NEW: Streaming summary view ── */}
+                                        {/* ── Chat-style streaming view ── */}
                                         {appState === 'streaming' && streamingLectureId && (
                                             <motion.div key="streaming"
                                                 initial={{ opacity: 0, y: 12 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -8 }}
                                             >
-                                                <StreamingSummaryView
-                                                    summary={streamingSummary}
+                                                <ChatView
+                                                    lectureId={streamingLectureId}
+                                                    fileName={streamingFileName}
+                                                    accessToken={accessToken!}
+                                                    streamingSummary={streamingSummary}
                                                     isStreaming={isStreaming}
                                                     isComplete={isStreamComplete}
                                                     isConnected={isConnected}
-                                                    error={streamError}
+                                                    streamError={streamError}
                                                     triggerStream={triggerStream}
                                                     onReset={handleReset}
-                                                    fileName={streamingFileName}
+                                                    onStreamReady={handleStreamReady}
                                                 />
-
-                                                {/* Show navigation actions once streaming is complete */}
-                                                {isStreamComplete && streamingLectureId && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, y: 12 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: 0.3 }}
-                                                        className="mt-5 rounded-2xl overflow-hidden border border-primary/20"
-                                                        style={{ background: 'var(--gradient-glass)', backdropFilter: 'blur(16px)' }}
-                                                    >
-                                                        <div className="px-5 py-3 border-b border-border/50 flex items-center gap-2"
-                                                            style={{ background: 'hsl(var(--primary) / 0.06)' }}>
-                                                            <div className="w-2 h-2 rounded-full" style={{ background: 'var(--gradient-brand)' }} />
-                                                            <p className="text-sm font-bold text-foreground">What would you like to do next?</p>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
-                                                            <motion.button
-                                                                whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                                                                onClick={() => navigate(`/lecture/${streamingLectureId}?tab=chat`)}
-                                                                className="group flex items-start gap-4 p-4 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:bg-primary/[0.03] transition-all text-left"
-                                                                style={{ boxShadow: 'var(--shadow-card)' }}
-                                                            >
-                                                                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-                                                                    style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}>
-                                                                    <MessageSquare className="w-5 h-5 text-primary-foreground" />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Ask Questions</p>
-                                                                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                                                                        Chat with your lecture &mdash; get source-backed answers
-                                                                    </p>
-                                                                </div>
-                                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
-                                                            </motion.button>
-                                                            <motion.button
-                                                                whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
-                                                                onClick={() => navigate(`/lecture/${streamingLectureId}?tab=quiz`)}
-                                                                className="group flex items-start gap-4 p-4 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:bg-primary/[0.03] transition-all text-left"
-                                                                style={{ boxShadow: 'var(--shadow-card)' }}
-                                                            >
-                                                                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
-                                                                    style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}>
-                                                                    <Brain className="w-5 h-5 text-primary-foreground" />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Take a Quiz</p>
-                                                                    <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                                                                        Test yourself with an auto-generated MCQ quiz
-                                                                    </p>
-                                                                </div>
-                                                                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
-                                                            </motion.button>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
                                             </motion.div>
                                         )}
 
