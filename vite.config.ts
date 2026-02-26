@@ -4,6 +4,7 @@ import path from 'path'
 import { componentTagger } from 'lovable-tagger'
 
 export default defineConfig(({ mode }) => ({
+  define: { global: 'globalThis' },   // sockjs-client expects Node's `global`
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
@@ -14,13 +15,18 @@ export default defineConfig(({ mode }) => ({
     },
   },
   server: {
-    host: '::',
-    port: 8080,
+    host: 'localhost',
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+      },
+      '/ws': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        ws: true,  // ← required for WebSocket upgrade
       },
     },
   },

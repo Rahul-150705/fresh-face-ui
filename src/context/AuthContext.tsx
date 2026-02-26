@@ -18,10 +18,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEYS = {
-  ACCESS_TOKEN:  'ta_access_token',
+  ACCESS_TOKEN: 'ta_access_token',
   REFRESH_TOKEN: 'ta_refresh_token',
-  USER:          'ta_user',
-  ACCESS_EXP:    'ta_access_exp',
+  USER: 'ta_user',
+  ACCESS_EXP: 'ta_access_exp',
 };
 
 /**
@@ -39,10 +39,13 @@ async function safeJson(res: Response): Promise<any> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user,        setUser]        = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [isLoading,   setIsLoading]   = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref holds the latest doRefresh — breaks the circular dep between the three callbacks
+  const doRefreshRef = useRef<() => Promise<void>>(() => Promise.resolve());
 
   const clearAuth = useCallback(() => {
     setUser(null);
@@ -54,10 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
   }, []);
 
+  // scheduleTokenRefresh uses doRefreshRef (stable ref) — no circular dep
   const scheduleTokenRefresh = useCallback((expiresInMs: number) => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     const delay = Math.max(expiresInMs - 60_000, 0);
-    refreshTimerRef.current = setTimeout(() => doRefresh(), delay);
+    refreshTimerRef.current = setTimeout(() => doRefreshRef.current(), delay);
   }, []);
 
   const persistAuth = useCallback((authResponse: any) => {
@@ -101,12 +105,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clearAuth, persistAuth]);
 
+  // Keep the ref in sync with the latest doRefresh — must happen on every render
+  doRefreshRef.current = doRefresh;
+
   // Hydration on page load
   useEffect(() => {
     const hydrate = async () => {
       const storedToken = sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-      const storedUser  = sessionStorage.getItem(STORAGE_KEYS.USER);
-      const storedExp   = sessionStorage.getItem(STORAGE_KEYS.ACCESS_EXP);
+      const storedUser = sessionStorage.getItem(STORAGE_KEYS.USER);
+      const storedExp = sessionStorage.getItem(STORAGE_KEYS.ACCESS_EXP);
 
       if (storedToken && storedUser && storedExp) {
         const msLeft = Number(storedExp) - Date.now();

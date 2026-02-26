@@ -4,9 +4,14 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import LectureDetailPage from './pages/LectureDetailPage';
+import LandingPage from './pages/LandingPage';
 
+// ── Route guards ──────────────────────────────────────────────────────────────
+
+/** Authenticated users only — redirects to /login if not logged in */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -17,14 +22,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-function PublicRoute({ children }: { children: React.ReactNode }) {
+/** Auth pages (/login, /signup) — redirects already-logged-in users to /dashboard */
+function AuthRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return null;
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
+
+// ── Page wrappers ─────────────────────────────────────────────────────────────
 
 function LoginPageWrapper() {
   const navigate = useNavigate();
@@ -36,17 +45,29 @@ function SignupPageWrapper() {
   return <SignupPage onNavigateLogin={() => navigate('/login')} />;
 }
 
+// ── Routes ─────────────────────────────────────────────────────────────────────
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<PublicRoute><LoginPageWrapper /></PublicRoute>} />
-      <Route path="/signup" element={<PublicRoute><SignupPageWrapper /></PublicRoute>} />
+      {/* Public home — landing page (anyone can see this) */}
+      <Route path="/" element={<LandingPage />} />
+
+      {/* Auth pages — redirect to dashboard if already logged in */}
+      <Route path="/login" element={<AuthRoute><LoginPageWrapper /></AuthRoute>} />
+      <Route path="/signup" element={<AuthRoute><SignupPageWrapper /></AuthRoute>} />
+
+      {/* Protected pages — require login */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/lecture/:lectureId" element={<ProtectedRoute><LectureDetailPage /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
+
+// ── App ───────────────────────────────────────────────────────────────────────
 
 const App = () => (
   <BrowserRouter>

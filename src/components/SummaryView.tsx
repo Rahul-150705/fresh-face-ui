@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
 import {
-  Lightbulb, BookOpen, Target, FileText, BookMarked, Clock, Bot,
-  ArrowLeft, Copy, Download, Check, ChevronDown, ChevronUp,
-  ScrollText, BookA, GraduationCap, ExternalLink
+  BookMarked, FileText, BookOpen, Bot, Clock,
+  ArrowLeft, Copy, Download, Check,
+  MessageSquare, Brain, ChevronRight
 } from 'lucide-react';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface SummaryData {
   lectureId?: string;
@@ -30,43 +31,63 @@ interface SummaryViewProps {
   onAskQuestions?: () => void;
 }
 
-function SummaryView({ summary, onReset, onTakeQuiz, onAskQuestions }: SummaryViewProps) {
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export default function SummaryView({ summary, onReset, onTakeQuiz, onAskQuestions }: SummaryViewProps) {
   const {
-    title, overview, keyPoints = [], definitions = [], examPoints = [],
-    detailedExplanation, furtherReading = [], markdownSummary,
-    fileName, provider, generatedAt, pageCount
+    title, overview, keyPoints = [], definitions = [],
+    examPoints = [], detailedExplanation, furtherReading = [],
+    markdownSummary, fileName, provider, generatedAt, pageCount,
   } = summary;
 
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'cards' | 'markdown'>('cards');
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    overview: true, keyPoints: true, definitions: true,
-    detailed: false, examPoints: true, furtherReading: true
-  });
 
-  const toggleSection = (key: string) =>
-    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
-
-  const formatDate = (isoString?: string) => {
-    if (!isoString) return '';
+  const formatDate = (iso?: string) => {
+    if (!iso) return '';
     try {
-      return new Date(isoString).toLocaleString('en-IN', {
+      return new Date(iso).toLocaleString('en-IN', {
         day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
+        hour: '2-digit', minute: '2-digit',
       });
-    } catch { return isoString; }
+    } catch { return iso; }
   };
 
   const handleCopy = async () => {
-    if (!markdownSummary) return;
-    await navigator.clipboard.writeText(markdownSummary);
+    const text = buildPlainText();
+    await navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const buildPlainText = () => {
+    const lines: string[] = [`# ${title}`, ''];
+    if (overview) lines.push(overview, '');
+    if (keyPoints.length) {
+      lines.push('Key Points');
+      keyPoints.forEach((k, i) => lines.push(`${i + 1}. ${k}`));
+      lines.push('');
+    }
+    if (definitions.length) {
+      lines.push('Definitions');
+      definitions.forEach((d, i) => lines.push(`${i + 1}. ${d}`));
+      lines.push('');
+    }
+    if (detailedExplanation) lines.push(detailedExplanation, '');
+    if (examPoints.length) {
+      lines.push('Exam Tips');
+      examPoints.forEach((e, i) => lines.push(`${i + 1}. ${e}`));
+      lines.push('');
+    }
+    if (furtherReading.length) {
+      lines.push('Further Reading');
+      furtherReading.forEach(f => lines.push(`• ${f}`));
+    }
+    return lines.join('\n');
+  };
+
   const handleDownload = () => {
-    if (!markdownSummary) return;
-    const blob = new Blob([markdownSummary], { type: 'text/markdown' });
+    const content = markdownSummary || buildPlainText();
+    const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -75,51 +96,7 @@ function SummaryView({ summary, onReset, onTakeQuiz, onAskQuestions }: SummaryVi
     URL.revokeObjectURL(url);
   };
 
-  const SectionCard = ({ sectionKey, icon: Icon, label, colorClass, bgClass, bulletClass, colorStyle, bgStyle, bulletStyle, children }: {
-    sectionKey: string; icon: any; label: string;
-    colorClass?: string; bgClass?: string; bulletClass?: string;
-    colorStyle?: string; bgStyle?: string; bulletStyle?: string;
-    children: React.ReactNode;
-  }) => {
-    const isOpen = expandedSections[sectionKey];
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-xl border border-border overflow-hidden"
-        style={{ boxShadow: 'var(--shadow-card)' }}
-      >
-        <button
-          onClick={() => toggleSection(sectionKey)}
-          className={`w-full flex items-center gap-3 px-5 py-3.5 border-b border-border text-left transition-colors hover:bg-muted/30 ${bgClass || ''}`}
-          style={bgStyle ? { background: bgStyle } : undefined}
-        >
-          <Icon className={`w-5 h-5 shrink-0 ${colorClass || ''}`} style={colorStyle ? { color: colorStyle } : undefined} />
-          <span className={`font-semibold font-display flex-1 ${colorClass || ''}`} style={colorStyle ? { color: colorStyle } : undefined}>{label}</span>
-          {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-        </button>
-        {isOpen && <div className="p-5">{children}</div>}
-      </motion.div>
-    );
-  };
-
-  const BulletList = ({ items, bulletClass, bulletStyle }: { items: string[]; bulletClass?: string; bulletStyle?: string }) => (
-    items.length === 0
-      ? <p className="text-sm text-muted-foreground italic">No items extracted.</p>
-      : <ul className="space-y-3">
-          {items.map((item, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span
-                className={`shrink-0 w-6 h-6 rounded-full text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5 ${bulletClass || ''}`}
-                style={bulletStyle ? { background: bulletStyle } : undefined}
-              >
-                {i + 1}
-              </span>
-              <span className="text-sm text-card-foreground leading-relaxed">{item}</span>
-            </li>
-          ))}
-        </ul>
-  );
+  const hasNextActions = onAskQuestions || onTakeQuiz;
 
   return (
     <motion.div
@@ -128,9 +105,9 @@ function SummaryView({ summary, onReset, onTakeQuiz, onAskQuestions }: SummaryVi
       transition={{ duration: 0.4 }}
       className="space-y-6"
     >
-      {/* Header */}
+      {/* ── Header toolbar ── */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="space-y-3 min-w-0 flex-1">
+        <div className="space-y-2 min-w-0 flex-1">
           <h2 className="text-2xl font-bold font-display text-foreground flex items-center gap-2">
             <BookMarked className="w-6 h-6 text-primary shrink-0" />
             <span className="truncate">{title}</span>
@@ -158,124 +135,173 @@ function SummaryView({ summary, onReset, onTakeQuiz, onAskQuestions }: SummaryVi
             )}
           </div>
         </div>
+
         <div className="flex items-center gap-2 shrink-0">
-          {markdownSummary && (
-            <>
-              <button
-                onClick={handleCopy}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
-              >
-                {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
-                <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
-              </button>
-              <button
-                onClick={handleDownload}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">.md</span>
-              </button>
-            </>
-          )}
-          <button
-            onClick={onReset}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
+          <button onClick={handleCopy}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">
+            {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+            <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy'}</span>
+          </button>
+          <button onClick={handleDownload}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">.md</span>
+          </button>
+          <button onClick={onReset}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">
             <ArrowLeft className="w-4 h-4" /> New Upload
           </button>
-          {onAskQuestions && (
-            <button
-              onClick={onAskQuestions}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-primary-foreground transition-opacity"
-              style={{ background: 'var(--gradient-brand)' }}
-            >
-              <BookOpen className="w-4 h-4" /> Ask Questions
-            </button>
-          )}
-          {onTakeQuiz && (
-            <button
-              onClick={onTakeQuiz}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-primary text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
-            >
-              <Target className="w-4 h-4" /> Take Quiz
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Tab switcher */}
-      {markdownSummary && (
-        <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-          <button
-            onClick={() => setActiveTab('cards')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'cards' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            Cards View
-          </button>
-          <button
-            onClick={() => setActiveTab('markdown')}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${activeTab === 'markdown' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            Markdown
-          </button>
-        </div>
-      )}
+      {/* ── Full summary content ── */}
+      <div className="bg-card rounded-2xl border border-border p-6 sm:p-8 space-y-8"
+        style={{ boxShadow: 'var(--shadow-card)' }}>
 
-      {activeTab === 'markdown' && markdownSummary ? (
-        <div className="bg-card rounded-xl border border-border p-6 max-h-[70vh] overflow-y-auto prose prose-sm prose-headings:font-display prose-headings:text-foreground prose-p:text-card-foreground prose-li:text-card-foreground prose-strong:text-foreground prose-a:text-primary max-w-none">
-          <ReactMarkdown>{markdownSummary}</ReactMarkdown>
-        </div>
-      ) : (
-        <div className="grid gap-5 max-h-[70vh] overflow-y-auto pr-1">
-          {/* Overview */}
-          {overview && (
-            <SectionCard sectionKey="overview" icon={ScrollText} label="Overview" colorClass="text-primary" bgClass="bg-primary/10">
-              <p className="text-sm text-card-foreground leading-relaxed">{overview}</p>
-            </SectionCard>
-          )}
+        {/* Overview */}
+        {overview && (
+          <p className="text-base text-foreground leading-relaxed">{overview}</p>
+        )}
 
-          {/* Key Concepts */}
-          <SectionCard sectionKey="keyPoints" icon={Lightbulb} label="Key Concepts" colorClass="text-primary" bgClass="bg-primary/10" bulletClass="bg-primary">
-            <BulletList items={keyPoints} bulletClass="bg-primary" />
-          </SectionCard>
+        {/* Key Points */}
+        {keyPoints.length > 0 && (
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Key Points</h3>
+            <ol className="space-y-2.5">
+              {keyPoints.map((point, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5"
+                    style={{ background: 'var(--gradient-brand)' }}>
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-foreground leading-relaxed">{point}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
-          {/* Definitions */}
-          <SectionCard sectionKey="definitions" icon={BookA} label="Definitions" colorClass="text-accent" bgClass="bg-accent/10" bulletClass="bg-accent">
-            <BulletList items={definitions} bulletClass="bg-accent" />
-          </SectionCard>
+        {/* Definitions */}
+        {definitions.length > 0 && (
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Definitions</h3>
+            <ol className="space-y-2.5">
+              {definitions.map((def, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center mt-0.5 bg-accent text-accent-foreground">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-foreground leading-relaxed">{def}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
-          {/* Detailed Explanation */}
-          {detailedExplanation && (
-            <SectionCard sectionKey="detailed" icon={BookOpen} label="Detailed Explanation" colorClass="text-primary" bgClass="bg-primary/5">
-              <div className="text-sm text-card-foreground leading-relaxed whitespace-pre-line">{detailedExplanation}</div>
-            </SectionCard>
-          )}
+        {/* Detailed Explanation */}
+        {detailedExplanation && (
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-primary">Detailed Explanation</h3>
+            <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{detailedExplanation}</p>
+          </section>
+        )}
 
-          {/* Exam Takeaways */}
-          <SectionCard
-            sectionKey="examPoints" icon={Target} label="Exam-Focused Takeaways"
-            colorStyle="hsl(36 90% 45%)" bgStyle="hsla(36, 90%, 45%, 0.1)" bulletStyle="hsl(36 90% 45%)"
-          >
-            <BulletList items={examPoints} bulletStyle="hsl(36 90% 45%)" />
-          </SectionCard>
+        {/* Exam Tips */}
+        {examPoints.length > 0 && (
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: 'hsl(36 90% 45%)' }}>
+              Exam Tips
+            </h3>
+            <ol className="space-y-2.5">
+              {examPoints.map((point, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center mt-0.5"
+                    style={{ background: 'hsl(36 90% 45%)' }}>
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-foreground leading-relaxed">{point}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
-          {/* Further Reading */}
-          {furtherReading.length > 0 && (
-            <SectionCard sectionKey="furtherReading" icon={ExternalLink} label="Further Reading" colorClass="text-muted-foreground" bgClass="bg-muted/50">
-              <ul className="space-y-2">
-                {furtherReading.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-card-foreground">
-                    <GraduationCap className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </SectionCard>
-          )}
-        </div>
+        {/* Further Reading */}
+        {furtherReading.length > 0 && (
+          <section className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Further Reading</h3>
+            <ul className="space-y-2">
+              {furtherReading.map((item, i) => (
+                <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
+                  <span className="text-primary mt-1">•</span>
+                  <span className="leading-relaxed">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+
+      {/* ── What would you like to do next? ── */}
+      {hasNextActions && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="rounded-2xl overflow-hidden border border-primary/20"
+          style={{ background: 'var(--gradient-glass)', backdropFilter: 'blur(16px)' }}
+        >
+          <div className="px-5 py-3 border-b border-border/50 flex items-center gap-2"
+            style={{ background: 'hsl(var(--primary) / 0.06)' }}>
+            <div className="w-2 h-2 rounded-full" style={{ background: 'var(--gradient-brand)' }} />
+            <p className="text-sm font-bold text-foreground">What would you like to do next?</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5">
+            {onAskQuestions && (
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+                onClick={onAskQuestions}
+                className="group flex items-start gap-4 p-4 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:bg-primary/[0.03] transition-all text-left"
+                style={{ boxShadow: 'var(--shadow-card)' }}
+              >
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
+                  style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}>
+                  <MessageSquare className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Ask Questions</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    Chat with your lecture — get source-backed answers
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
+              </motion.button>
+            )}
+
+            {onTakeQuiz && (
+              <motion.button
+                whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}
+                onClick={onTakeQuiz}
+                className="group flex items-start gap-4 p-4 rounded-xl border-2 border-border bg-card hover:border-primary/40 hover:bg-primary/[0.03] transition-all text-left"
+                style={{ boxShadow: 'var(--shadow-card)' }}
+              >
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform"
+                  style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}>
+                  <Brain className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Take a Quiz</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    Test yourself with an auto-generated MCQ quiz
+                  </p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all mt-1 shrink-0" />
+              </motion.button>
+            )}
+          </div>
+        </motion.div>
       )}
     </motion.div>
   );
 }
-
-export default SummaryView;

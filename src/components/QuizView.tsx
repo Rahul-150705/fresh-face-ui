@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Brain, ChevronRight, Send, RotateCcw, ArrowLeft, Check, X,
@@ -6,6 +6,33 @@ import {
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { generateQuiz, submitQuizAnswers } from '@/services/api';
+
+/* ── Confetti burst (pure CSS + framer-motion, no npm needed) ── */
+const CONFETTI_COLORS = ['hsl(263 70% 60%)', 'hsl(38 92% 55%)', 'hsl(152 60% 42%)', 'hsl(217 91% 60%)', 'hsl(0 72% 55%)'];
+
+function ConfettiBurst() {
+  const pieces = Array.from({ length: 40 }, (_, i) => i);
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {pieces.map(i => (
+        <motion.div key={i}
+          initial={{ y: -20, x: `${Math.random() * 100}vw`, opacity: 1, scale: 1 }}
+          animate={{ y: '110vh', opacity: [1, 1, 0], rotate: Math.random() * 720 - 360, scale: [1, 0.8] }}
+          transition={{ duration: 1.8 + Math.random() * 1.2, delay: Math.random() * 0.6, ease: 'easeIn' }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            width: `${6 + Math.random() * 8}px`,
+            height: `${6 + Math.random() * 8}px`,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 
 /* ────────── types ────────── */
 
@@ -80,7 +107,7 @@ export default function QuizView({ lectureId, lectureTitle, accessToken, onBack 
   }, [lectureId, accessToken]);
 
   /* kick off on mount */
-  useState(() => { startQuiz(); });
+  useEffect(() => { startQuiz(); }, []);
 
   /* ── select answer ── */
   const selectAnswer = (label: string) => {
@@ -188,15 +215,13 @@ export default function QuizView({ lectureId, lectureTitle, accessToken, onBack 
                     key={label}
                     onClick={() => selectAnswer(label)}
                     disabled={phase === 'submitting'}
-                    className={`w-full text-left flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${
-                      selected
-                        ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
-                        : 'border-border hover:border-primary/40 hover:bg-muted/50'
-                    }`}
+                    className={`w-full text-left flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${selected
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary/30'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                      }`}
                   >
-                    <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                      selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                    }`}>
+                    <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${selected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                      }`}>
                       {label}
                     </span>
                     <span className="text-sm text-foreground">{opt}</span>
@@ -244,9 +269,8 @@ export default function QuizView({ lectureId, lectureTitle, accessToken, onBack 
             <button
               key={i}
               onClick={() => setCurrentQ(i)}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                i === currentQ ? 'bg-primary scale-125' : answers[i] ? 'bg-primary/40' : 'bg-muted'
-              }`}
+              className={`w-3 h-3 rounded-full transition-colors ${i === currentQ ? 'bg-primary scale-125' : answers[i] ? 'bg-primary/40' : 'bg-muted'
+                }`}
             />
           ))}
         </div>
@@ -262,8 +286,13 @@ export default function QuizView({ lectureId, lectureTitle, accessToken, onBack 
         ? 'hsl(var(--color-warning))'
         : 'hsl(var(--destructive))';
 
+    const showConfetti = results.percentage >= 70;
+
     return (
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        {/* Confetti on good score */}
+        {showConfetti && <ConfettiBurst />}
+
         {/* score card */}
         <div className="bg-card rounded-xl border border-border p-8 text-center space-y-4" style={{ boxShadow: 'var(--shadow-card)' }}>
           <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style={{ background: pctColor + '22' }}>
@@ -310,9 +339,8 @@ export default function QuizView({ lectureId, lectureTitle, accessToken, onBack 
               {results.results.map((r, i) => (
                 <div
                   key={i}
-                  className={`rounded-xl border-2 p-5 space-y-3 ${
-                    r.correct ? 'border-[hsl(var(--color-success))]/40 bg-[hsl(var(--color-success))]/5' : 'border-destructive/40 bg-destructive/5'
-                  }`}
+                  className={`rounded-xl border-2 p-5 space-y-3 ${r.correct ? 'border-[hsl(var(--color-success))]/40 bg-[hsl(var(--color-success))]/5' : 'border-destructive/40 bg-destructive/5'
+                    }`}
                 >
                   <div className="flex items-start gap-2">
                     {r.correct

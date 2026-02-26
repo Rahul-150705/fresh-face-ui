@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { GraduationCap, Zap, BookOpen, Target, Bot, Mail, Lock } from 'lucide-react';
+import { GraduationCap, Zap, BookOpen, Target, Bot, Mail, Lock, ArrowLeft } from 'lucide-react';
 
 interface LoginPageProps {
   onNavigateSignup: () => void;
@@ -9,6 +10,7 @@ interface LoginPageProps {
 
 export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
   const { login } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,6 +79,12 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
             </div>
             <span className="font-bold text-xl text-foreground">AI Teaching Assistant</span>
           </div>
+
+          <button onClick={() => navigate('/')}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Home
+          </button>
 
           <h2 className="text-2xl font-bold text-foreground mb-2">Welcome back</h2>
           <p className="text-muted-foreground mb-8">Sign in to your account to continue</p>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { askQuestion, AskQuestionResponse, getLecture, reindexLecture, generateQuiz, submitQuizAnswers } from '../services/api';
 import { Progress } from '@/components/ui/progress';
+import SummaryView from '../components/SummaryView';
 
 // ── Types ──
 
@@ -61,8 +62,11 @@ export default function LectureDetailPage() {
   const { lectureId } = useParams<{ lectureId: string }>();
   const navigate = useNavigate();
   const { accessToken } = useAuth();
+  const [searchParams] = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<'summary' | 'chat' | 'quiz'>('summary');
+  // Support ?tab=chat or ?tab=quiz from QuickAccessPanel navigation
+  const initialTab = (['summary', 'chat', 'quiz'] as const).find(t => t === searchParams.get('tab')) ?? 'summary';
+  const [activeTab, setActiveTab] = useState<'summary' | 'chat' | 'quiz'>(initialTab);
 
   // ── Summary state ──
   const [lecture, setLecture] = useState<any>(null);
@@ -144,7 +148,7 @@ export default function LectureDetailPage() {
       await reindexLecture(lectureId, accessToken);
       setReindexSuccess(true);
       setTimeout(() => setReindexSuccess(false), 5000);
-    } catch {}
+    } catch { }
     finally { setReindexing(false); }
   };
 
@@ -254,11 +258,10 @@ export default function LectureDetailPage() {
           <div className="flex gap-1 border-t border-border/30 pt-1">
             {tabs.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-                  activeTab === tab.key
-                    ? 'text-primary border-b-2 border-primary bg-primary/[0.05]'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                }`}>
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${activeTab === tab.key
+                  ? 'text-primary border-b-2 border-primary bg-primary/[0.05]'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  }`}>
                 <tab.icon className="w-4 h-4" />
                 {tab.label}
               </button>
@@ -284,7 +287,7 @@ export default function LectureDetailPage() {
         {/* ── SUMMARY TAB ── */}
         {activeTab === 'summary' && (
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
               {lectureLoading ? (
                 <div className="flex items-center justify-center py-20">
                   <Loader2 className="w-6 h-6 text-primary animate-spin" />
@@ -293,91 +296,53 @@ export default function LectureDetailPage() {
                 <div className="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 text-destructive">
                   <AlertTriangle className="w-5 h-5" /> {lectureError}
                 </div>
+              ) : lecture && !lecture.overview && !lecture.keyPoints?.length && !lecture.title ? (
+                /* Summary still generating in background */
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center py-20 gap-5 text-center">
+                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                    style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-glow)' }}>
+                    <Loader2 className="w-8 h-8 text-primary-foreground animate-spin" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-lg font-bold text-foreground">AI Summary is generating…</p>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      The PDF was indexed for Q&A. The full summary is being generated in the background — it'll appear here when ready.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setLectureLoading(true);
+                      getLecture(lectureId!, accessToken!)
+                        .then(d => { setLecture(d); setLectureError(''); })
+                        .catch(e => setLectureError(e.message))
+                        .finally(() => setLectureLoading(false));
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors">
+                    <RefreshCw className="w-4 h-4" /> Refresh Summary
+                  </button>
+                </motion.div>
               ) : lecture ? (
-                <>
-                  {/* Title & metadata */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                    <h2 className="text-2xl font-extrabold text-foreground mb-3">{lecture.title}</h2>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {lecture.fileName && (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
-                          <FileText className="w-3 h-3" /> {lecture.fileName}
-                        </span>
-                      )}
-                      {lecture.provider && (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                          <GraduationCap className="w-3 h-3" /> {lecture.provider}
-                        </span>
-                      )}
-                    </div>
-                  </motion.div>
-
-                  {lecture.overview && (
-                    <SectionCard sectionKey="overview" icon={ScrollText} label="Overview">
-                      <p className="text-sm text-card-foreground leading-relaxed">{lecture.overview}</p>
-                    </SectionCard>
-                  )}
-
-                  {lecture.keyPoints?.length > 0 && (
-                    <SectionCard sectionKey="keyPoints" icon={Lightbulb} label="Key Points">
-                      <ul className="space-y-3">
-                        {lecture.keyPoints.map((kp: string, i: number) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <span className="shrink-0 w-6 h-6 rounded-full text-primary-foreground text-xs font-bold flex items-center justify-center mt-0.5" style={{ background: 'var(--gradient-brand)' }}>
-                              {i + 1}
-                            </span>
-                            <span className="text-sm text-card-foreground leading-relaxed">{kp}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </SectionCard>
-                  )}
-
-                  {lecture.definitions?.length > 0 && (
-                    <SectionCard sectionKey="definitions" icon={BookA} label="Definitions">
-                      <ul className="space-y-3">
-                        {lecture.definitions.map((d: string, i: number) => (
-                          <li key={i} className="flex items-start gap-3">
-                            <span className="shrink-0 w-6 h-6 rounded-full bg-accent text-accent-foreground text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-                            <span className="text-sm text-card-foreground leading-relaxed">{d}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </SectionCard>
-                  )}
-
-                  {lecture.detailedExplanation && (
-                    <SectionCard sectionKey="detailed" icon={BookOpen} label="Detailed Explanation">
-                      <div className="prose prose-sm prose-headings:text-foreground prose-p:text-card-foreground prose-li:text-card-foreground prose-strong:text-foreground prose-a:text-primary max-w-none text-sm">
-                        <ReactMarkdown>{lecture.detailedExplanation}</ReactMarkdown>
-                      </div>
-                    </SectionCard>
-                  )}
-
-                  {lecture.examPoints?.length > 0 && (
-                    <SectionCard sectionKey="examPoints" icon={Target} label="Exam Points">
-                      <div className="grid gap-3">
-                        {lecture.examPoints.map((ep: string, i: number) => (
-                          <div key={i} className="p-3 rounded-lg border border-[hsl(var(--color-warning))]/20 bg-[hsl(var(--color-warning))]/5 text-sm text-card-foreground">
-                            <span className="font-semibold" style={{ color: 'hsl(var(--color-warning))' }}>#{i + 1}</span> {ep}
-                          </div>
-                        ))}
-                      </div>
-                    </SectionCard>
-                  )}
-
-                  {lecture.furtherReading?.length > 0 && (
-                    <SectionCard sectionKey="furtherReading" icon={ExternalLink} label="Further Reading">
-                      <div className="flex flex-wrap gap-2">
-                        {lecture.furtherReading.map((fr: string, i: number) => (
-                          <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary">
-                            <ExternalLink className="w-3 h-3" /> {fr}
-                          </span>
-                        ))}
-                      </div>
-                    </SectionCard>
-                  )}
-                </>
+                /* Render summary from DB using the unified SummaryView */
+                <SummaryView
+                  summary={{
+                    lectureId: lecture.id,
+                    title: lecture.title || lecture.fileName,
+                    overview: lecture.overview,
+                    keyPoints: lecture.keyPoints,
+                    definitions: lecture.definitions,
+                    detailedExplanation: lecture.detailedExplanation,
+                    examPoints: lecture.examPoints,
+                    furtherReading: lecture.furtherReading,
+                    fileName: lecture.fileName,
+                    provider: lecture.provider,
+                    generatedAt: lecture.processedAt,
+                    pageCount: lecture.pageCount,
+                  }}
+                  onReset={() => navigate('/dashboard')}
+                  onAskQuestions={() => setActiveTab('chat')}
+                  onTakeQuiz={() => setActiveTab('quiz')}
+                />
               ) : null}
             </div>
           </div>
@@ -405,11 +370,10 @@ export default function LectureDetailPage() {
                   {messages.map(msg => (
                     <motion.div key={msg.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] sm:max-w-[75%] ${
-                        msg.role === 'user'
-                          ? 'rounded-2xl rounded-br-md px-4 py-3 text-primary-foreground text-sm'
-                          : 'glass-card rounded-2xl rounded-bl-md px-5 py-4'
-                      }`}
+                      <div className={`max-w-[85%] sm:max-w-[75%] ${msg.role === 'user'
+                        ? 'rounded-2xl rounded-br-md px-4 py-3 text-primary-foreground text-sm'
+                        : 'glass-card rounded-2xl rounded-bl-md px-5 py-4'
+                        }`}
                         style={msg.role === 'user' ? { background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' } : undefined}>
                         {msg.role === 'assistant' ? (
                           <div className="space-y-3">
@@ -559,12 +523,10 @@ export default function LectureDetailPage() {
                             return (
                               <button key={label} onClick={() => { const copy = [...answers]; copy[currentQ] = label; setAnswers(copy); }}
                                 disabled={quizPhase === 'submitting'}
-                                className={`w-full text-left flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${
-                                  selected ? 'border-primary bg-primary/10 ring-1 ring-primary/30' : 'border-border hover:border-primary/40 hover:bg-muted/50'
-                                }`}>
-                                <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                                  selected ? 'text-primary-foreground' : 'bg-muted text-muted-foreground'
-                                }`} style={selected ? { background: 'var(--gradient-brand)' } : undefined}>
+                                className={`w-full text-left flex items-center gap-3 p-4 rounded-lg border-2 transition-all duration-200 ${selected ? 'border-primary bg-primary/10 ring-1 ring-primary/30' : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                                  }`}>
+                                <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${selected ? 'text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                  }`} style={selected ? { background: 'var(--gradient-brand)' } : undefined}>
                                   {label}
                                 </span>
                                 <span className="text-sm text-foreground">{opt}</span>
@@ -598,9 +560,8 @@ export default function LectureDetailPage() {
                     <div className="flex justify-center gap-1.5 flex-wrap">
                       {quiz.questions.map((_: any, i: number) => (
                         <button key={i} onClick={() => setCurrentQ(i)}
-                          className={`w-3 h-3 rounded-full transition-colors ${
-                            i === currentQ ? 'bg-primary scale-125' : answers[i] ? 'bg-primary/40' : 'bg-muted'
-                          }`} />
+                          className={`w-3 h-3 rounded-full transition-colors ${i === currentQ ? 'bg-primary scale-125' : answers[i] ? 'bg-primary/40' : 'bg-muted'
+                            }`} />
                       ))}
                     </div>
                   </motion.div>
@@ -611,7 +572,7 @@ export default function LectureDetailPage() {
               {quizPhase === 'results' && quizResults && (() => {
                 const pctColor = quizResults.percentage >= 80
                   ? 'hsl(var(--color-success))' : quizResults.percentage >= 50
-                  ? 'hsl(var(--color-warning))' : 'hsl(var(--destructive))';
+                    ? 'hsl(var(--color-warning))' : 'hsl(var(--destructive))';
 
                 return (
                   <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -642,9 +603,8 @@ export default function LectureDetailPage() {
                       {reviewOpen && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden space-y-4">
                           {quizResults.results.map((r, i) => (
-                            <div key={i} className={`rounded-xl border-2 p-5 space-y-3 ${
-                              r.correct ? 'border-[hsl(var(--color-success))]/40 bg-[hsl(var(--color-success))]/5' : 'border-destructive/40 bg-destructive/5'
-                            }`}>
+                            <div key={i} className={`rounded-xl border-2 p-5 space-y-3 ${r.correct ? 'border-[hsl(var(--color-success))]/40 bg-[hsl(var(--color-success))]/5' : 'border-destructive/40 bg-destructive/5'
+                              }`}>
                               <div className="flex items-start gap-2">
                                 {r.correct ? <Check className="w-5 h-5 shrink-0 mt-0.5" style={{ color: 'hsl(var(--color-success))' }} /> : <X className="w-5 h-5 text-destructive shrink-0 mt-0.5" />}
                                 <p className="font-medium text-foreground text-sm">Q{i + 1}. {r.question}</p>
