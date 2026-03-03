@@ -214,3 +214,27 @@ export async function submitQuizAnswers(lectureId: string, answers: string[], ac
   if (!data) throw new Error('Server returned an empty response.');
   return data;
 }
+
+// ── General Chat ──
+
+export async function sendChatMessage(message: string, conversationId: string, accessToken: string) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: jsonHeaders(accessToken),
+    body: JSON.stringify({ message, conversationId }),
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Chat failed (${res.status})`);
+  return data;
+}
+
+export async function stopChatGeneration(conversationId: string, accessToken: string) {
+  const res = await fetch('/api/chat/stop', {
+    method: 'POST',
+    headers: jsonHeaders(accessToken),
+    body: JSON.stringify({ conversationId }),
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Stop failed (${res.status})`);
+  return data;
+}
