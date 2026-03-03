@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Send, Loader2, FileText } from 'lucide-react';
+import { Plus, Send, Square, Loader2 } from 'lucide-react';
 
 interface ChatInputBarProps {
   onSendMessage: (text: string) => void;
   onFileSelect: (file: File) => void;
+  onStop?: () => void;
   disabled?: boolean;
   isStreaming?: boolean;
   isAnswering?: boolean;
@@ -16,6 +17,7 @@ const MAX_MB = 10;
 export default function ChatInputBar({
   onSendMessage,
   onFileSelect,
+  onStop,
   disabled,
   isStreaming,
   isAnswering,
@@ -25,14 +27,15 @@ export default function ChatInputBar({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const placeholder = isStreaming
-    ? 'AI is generating summary...'
+    ? 'AI is generating...'
     : isAnswering
       ? 'Thinking...'
       : hasLecture
         ? 'Ask a question about this lecture...'
-        : 'Upload a PDF to get started...';
+        : 'Message LearnAI...';
 
-  const canSend = text.trim().length > 0 && !disabled && !isStreaming && !isAnswering && hasLecture;
+  const canSend = text.trim().length > 0 && !disabled && !isStreaming && !isAnswering;
+  const showStop = isStreaming && onStop;
 
   const handleSubmit = useCallback(() => {
     if (!canSend) return;
@@ -57,16 +60,10 @@ export default function ChatInputBar({
   };
 
   return (
-    <div className="border-t border-border/50 bg-background/80 backdrop-blur-xl px-4 py-3">
+    <div className="border-t border-border/50 bg-background/80 backdrop-blur-xl px-4 py-3 shrink-0">
       <div className="max-w-3xl mx-auto flex items-end gap-2">
         {/* File upload button */}
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".pdf,application/pdf"
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleFileChange} />
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -85,7 +82,7 @@ export default function ChatInputBar({
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            disabled={disabled || isStreaming || !hasLecture}
+            disabled={disabled || isStreaming || isAnswering}
             rows={1}
             className="w-full resize-none rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all disabled:opacity-50 max-h-32"
             style={{ minHeight: '42px' }}
@@ -97,24 +94,36 @@ export default function ChatInputBar({
           />
         </div>
 
-        {/* Send button */}
-        <motion.button
-          whileHover={canSend ? { scale: 1.05 } : {}}
-          whileTap={canSend ? { scale: 0.95 } : {}}
-          onClick={handleSubmit}
-          disabled={!canSend}
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-primary-foreground transition-all disabled:opacity-30"
-          style={{
-            background: canSend ? 'var(--gradient-brand)' : 'hsl(var(--muted))',
-            boxShadow: canSend ? 'var(--shadow-brand)' : 'none',
-          }}
-        >
-          {isAnswering ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </motion.button>
+        {/* Send / Stop button */}
+        {showStop ? (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onStop}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-destructive text-destructive-foreground transition-all"
+            title="Stop generating"
+          >
+            <Square className="w-4 h-4 fill-current" />
+          </motion.button>
+        ) : (
+          <motion.button
+            whileHover={canSend ? { scale: 1.05 } : {}}
+            whileTap={canSend ? { scale: 0.95 } : {}}
+            onClick={handleSubmit}
+            disabled={!canSend}
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-primary-foreground transition-all disabled:opacity-30"
+            style={{
+              background: canSend ? 'var(--gradient-brand)' : 'hsl(var(--muted))',
+              boxShadow: canSend ? 'var(--shadow-brand)' : 'none',
+            }}
+          >
+            {isAnswering ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </motion.button>
+        )}
       </div>
     </div>
   );

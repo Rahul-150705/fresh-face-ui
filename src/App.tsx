@@ -5,10 +5,10 @@ import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import LectureDetailPage from './pages/LectureDetailPage';
 import LandingPage from './pages/LandingPage';
+import ChatPage from './components/chat/ChatPage';
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
-/** Authenticated users only — redirects to /login if not logged in */
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -26,11 +26,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-/** Auth pages (/login, /signup) — redirects already-logged-in users to /dashboard */
 function AuthRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return null;
-  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+  return isAuthenticated ? <Navigate to="/chat" replace /> : <>{children}</>;
 }
 
 // ── Page wrappers ─────────────────────────────────────────────────────────────
@@ -50,15 +49,20 @@ function SignupPageWrapper() {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public home — landing page (anyone can see this) */}
+      {/* Public landing page */}
       <Route path="/" element={<LandingPage />} />
 
-      {/* Auth pages — redirect to dashboard if already logged in */}
+      {/* Auth pages */}
       <Route path="/login" element={<AuthRoute><LoginPageWrapper /></AuthRoute>} />
       <Route path="/signup" element={<AuthRoute><SignupPageWrapper /></AuthRoute>} />
 
-      {/* Protected pages — require login */}
+      {/* ChatGPT-style home — the main chat experience */}
+      <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+
+      {/* Legacy dashboard */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+
+      {/* Lecture detail page */}
       <Route path="/lecture/:lectureId" element={<ProtectedRoute><LectureDetailPage /></ProtectedRoute>} />
 
       {/* Fallback */}
