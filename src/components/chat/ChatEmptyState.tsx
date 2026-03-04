@@ -25,8 +25,8 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
         <motion.div
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center"
-          style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
+          className="w-16 h-16 rounded-2xl flex items-center justify-center bg-primary"
+          style={{ boxShadow: 'var(--shadow-brand)' }}
         >
           <Sparkles className="w-8 h-8 text-primary-foreground" />
         </motion.div>
@@ -45,8 +45,8 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onUploadClick}
-          className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-primary-foreground transition-all"
-          style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
+          className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary transition-all hover:opacity-90"
+          style={{ boxShadow: 'var(--shadow-brand)' }}
         >
           <Upload className="w-4 h-4" />
           Upload a PDF Lecture
@@ -62,9 +62,9 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card/50 text-sm text-muted-foreground cursor-default hover:border-primary/30 hover:text-foreground transition-all"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground cursor-default hover:border-foreground/20 hover:text-foreground transition-all"
               >
-                <s.icon className="w-4 h-4 text-primary shrink-0" />
+                <s.icon className="w-4 h-4 text-foreground shrink-0" />
                 {s.text}
               </motion.div>
             ))}

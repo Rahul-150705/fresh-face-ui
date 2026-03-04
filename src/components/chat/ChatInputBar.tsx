@@ -60,7 +60,7 @@ export default function ChatInputBar({
   };
 
   return (
-    <div className="border-t border-border/50 bg-background/80 backdrop-blur-xl px-4 py-3 shrink-0">
+    <div className="border-t border-border bg-background px-4 py-3 shrink-0">
       <div className="max-w-3xl mx-auto flex items-end gap-2">
         {/* File upload button */}
         <input ref={fileRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleFileChange} />
@@ -69,7 +69,7 @@ export default function ChatInputBar({
           whileTap={{ scale: 0.95 }}
           onClick={() => fileRef.current?.click()}
           disabled={isStreaming || isAnswering}
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all disabled:opacity-40"
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted transition-all disabled:opacity-40"
           title="Upload PDF"
         >
           <Plus className="w-5 h-5" />
@@ -84,7 +84,7 @@ export default function ChatInputBar({
             placeholder={placeholder}
             disabled={disabled || isStreaming || isAnswering}
             rows={1}
-            className="w-full resize-none rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all disabled:opacity-50 max-h-32"
+            className="w-full resize-none rounded-xl border border-border bg-card px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 focus:border-foreground/30 transition-all disabled:opacity-50 max-h-32"
             style={{ minHeight: '42px' }}
             onInput={e => {
               const el = e.currentTarget;
@@ -111,11 +111,10 @@ export default function ChatInputBar({
             whileTap={canSend ? { scale: 0.95 } : {}}
             onClick={handleSubmit}
             disabled={!canSend}
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-primary-foreground transition-all disabled:opacity-30"
-            style={{
-              background: canSend ? 'var(--gradient-brand)' : 'hsl(var(--muted))',
-              boxShadow: canSend ? 'var(--shadow-brand)' : 'none',
-            }}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-30 ${
+              canSend ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+            }`}
+            style={canSend ? { boxShadow: 'var(--shadow-brand)' } : undefined}
           >
             {isAnswering ? (
               <Loader2 className="w-4 h-4 animate-spin" />

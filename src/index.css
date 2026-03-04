@@ -4,97 +4,98 @@
 
 @layer base {
   :root {
-    --background: 240 20% 97%;
-    --foreground: 240 10% 10%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 10%;
+    --card: 0 0% 99%;
+    --card-foreground: 0 0% 7%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 10%;
+    --popover-foreground: 0 0% 7%;
 
-    --primary: 263 70% 50%;
+    --primary: 0 0% 9%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 10% 94%;
-    --secondary-foreground: 240 10% 10%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 240 10% 94%;
-    --muted-foreground: 240 5% 46%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 10% 90%;
-    --input: 240 10% 88%;
-    --ring: 263 70% 50%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 9%;
 
     --radius: 0.75rem;
 
-    --gradient-brand: linear-gradient(135deg, hsl(263 70% 50%), hsl(217 91% 60%));
-    --gradient-brand-hover: linear-gradient(135deg, hsl(263 70% 44%), hsl(217 91% 52%));
-    --gradient-hero: linear-gradient(160deg, hsl(240 30% 8%), hsl(263 40% 14%));
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-    --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 8px 32px rgba(0,0,0,0.08);
-    --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.12), 0 16px 48px rgba(0,0,0,0.14);
-    --shadow-brand: 0 4px 24px -4px hsl(263 70% 50% / 0.35);
-    --shadow-glow: 0 0 40px -8px hsl(263 70% 50% / 0.2);
+    --gradient-brand: linear-gradient(135deg, hsl(0 0% 9%), hsl(0 0% 20%));
+    --gradient-brand-hover: linear-gradient(135deg, hsl(0 0% 5%), hsl(0 0% 15%));
+    --gradient-hero: linear-gradient(160deg, hsl(0 0% 100%), hsl(0 0% 96%));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,255,255,0.4));
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.08), 0 12px 32px rgba(0,0,0,0.1);
+    --shadow-brand: 0 4px 24px -4px rgba(0,0,0,0.2);
+    --shadow-glow: 0 0 40px -8px rgba(0,0,0,0.1);
     --color-success: 152 60% 42%;
-    --color-warning: 38 92% 55%;
+    --color-warning: 38 92% 50%;
     --color-info: 210 80% 55%;
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 0 0% 9%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: 0 0% 9%;
   }
 
   .dark {
-    --background: 240 30% 4%;
-    --foreground: 240 10% 95%;
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
 
-    --card: 240 20% 7%;
-    --card-foreground: 240 10% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 240 20% 7%;
-    --popover-foreground: 240 10% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 263 70% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
 
-    --secondary: 240 14% 12%;
-    --secondary-foreground: 240 10% 95%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 240 14% 12%;
-    --muted-foreground: 240 5% 55%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 62% 35%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 14% 14%;
-    --input: 240 14% 14%;
-    --ring: 263 70% 58%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 83%;
 
+    --gradient-brand: linear-gradient(135deg, hsl(0 0% 90%), hsl(0 0% 70%));
     --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 9%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 83%;
   }
 }
 
@@ -158,9 +159,7 @@
 
   /* Glass card */
   .glass-card {
-    background: var(--gradient-glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: hsl(var(--card));
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
     box-shadow: var(--shadow-card);
@@ -168,7 +167,7 @@
 
   .glass-card-hover:hover {
     box-shadow: var(--shadow-card-hover);
-    border-color: hsl(var(--primary) / 0.3);
+    border-color: hsl(var(--primary) / 0.2);
   }
 
   /* Progress dots */
@@ -177,7 +176,7 @@
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 50%;
-    background: hsl(var(--primary));
+    background: hsl(var(--foreground));
     margin: 0 0.25rem;
     animation: pulse-dot 1.4s infinite;
   }
@@ -206,7 +205,8 @@
     color: hsl(var(--foreground));
   }
   .prose-dark a {
-    color: hsl(var(--primary));
+    color: hsl(var(--foreground));
+    text-decoration: underline;
   }
   .prose-dark strong {
     color: hsl(var(--foreground));
@@ -224,7 +224,7 @@
     overflow-x: auto;
   }
   .prose-dark blockquote {
-    border-left: 3px solid hsl(var(--primary));
+    border-left: 3px solid hsl(var(--foreground));
     padding-left: 1rem;
     color: hsl(var(--muted-foreground));
   }

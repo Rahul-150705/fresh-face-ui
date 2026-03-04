@@ -19,7 +19,6 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
   const isNearBottom = (el: HTMLElement, threshold = 100) =>
     el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
 
-  // Auto-scroll
   useEffect(() => {
     if (scrollRef.current && (isStreaming || isAnswering)) {
       if (!userScrolledUpRef.current) {
@@ -28,7 +27,6 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
     }
   }, [streamingContent, isStreaming, messages, isAnswering]);
 
-  // Also scroll on new messages when not streaming
   useEffect(() => {
     if (scrollRef.current && !userScrolledUpRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -69,8 +67,7 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3"
           >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-primary-foreground"
-              style={{ background: 'var(--gradient-brand)' }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-primary text-primary-foreground">
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="bg-card border border-border rounded-2xl px-4 py-3" style={{ boxShadow: 'var(--shadow-card)' }}>

@@ -38,16 +38,15 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12"
-        style={{ background: 'var(--gradient-hero)' }}>
+      {/* Left brand panel — black */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12 bg-primary">
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full blur-3xl" style={{ background: 'hsl(263 70% 50% / 0.15)' }} />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl" style={{ background: 'hsl(217 91% 60% / 0.1)' }} />
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full blur-3xl opacity-10 bg-primary-foreground" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-5 bg-primary-foreground" />
         </div>
         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="relative z-10 max-w-md">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: 'var(--gradient-brand)' }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-primary-foreground/10 border border-primary-foreground/20">
               <GraduationCap className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
@@ -60,7 +59,7 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
           <div className="space-y-4">
             {features.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3 text-primary-foreground/70">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-primary-foreground/10">
                   <Icon className="w-4 h-4" />
                 </div>
                 <span className="text-sm font-medium">{text}</span>
@@ -70,11 +69,11 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
         </motion.div>
       </div>
 
-      {/* Right form panel */}
+      {/* Right form panel — white */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gradient-brand)' }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary">
               <GraduationCap className="w-5 h-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-xl text-foreground">AI Teaching Assistant</span>
@@ -96,7 +95,7 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com"
                   value={form.email} onChange={handleChange} disabled={loading}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50" />
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-foreground transition-all disabled:opacity-50" />
               </div>
             </div>
 
@@ -106,7 +105,7 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••"
                   value={form.password} onChange={handleChange} disabled={loading}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50" />
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-foreground transition-all disabled:opacity-50" />
               </div>
             </div>
 
@@ -118,15 +117,14 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
             )}
 
             <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-lg font-semibold text-primary-foreground transition-all disabled:opacity-50 hover:shadow-lg"
-              style={{ background: loading ? 'hsl(var(--primary) / 0.7)' : 'var(--gradient-brand)' }}>
+              className="w-full py-3 rounded-lg font-semibold text-primary-foreground bg-primary transition-all disabled:opacity-50 hover:opacity-90">
               {loading ? <><span className="btn-spinner" /> Signing in…</> : 'Sign in →'}
             </button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
             Don't have an account?{' '}
-            <button onClick={onNavigateSignup} className="text-primary font-semibold hover:underline">Create one free</button>
+            <button onClick={onNavigateSignup} className="text-foreground font-semibold hover:underline">Create one free</button>
           </p>
         </motion.div>
       </div>
