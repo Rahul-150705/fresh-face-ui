@@ -54,11 +54,9 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
       {/* Avatar */}
       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
         isUser
-          ? 'bg-primary/15 text-primary'
-          : 'text-primary-foreground'
-      }`}
-        style={!isUser ? { background: 'var(--gradient-brand)' } : undefined}
-      >
+          ? 'bg-muted text-foreground'
+          : 'bg-primary text-primary-foreground'
+      }`}>
         {isUser ? (
           <User className="w-4 h-4" />
         ) : (
@@ -75,7 +73,7 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           isError
             ? 'bg-destructive/10 border border-destructive/20 text-destructive'
             : isUser
-              ? 'bg-primary/10 border border-primary/20 text-foreground'
+              ? 'bg-muted border border-border text-foreground'
               : 'bg-card border border-border text-foreground'
         }`}
           style={!isUser && !isError ? { boxShadow: 'var(--shadow-card)' } : undefined}
@@ -83,8 +81,8 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           {/* File upload message */}
           {message.type === 'file_upload' && (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-foreground" />
               </div>
               <div>
                 <p className="font-semibold text-foreground">{message.fileName}</p>
@@ -112,7 +110,7 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
               {/* Blinking cursor while streaming */}
               {message.isStreaming && (
                 <motion.span
-                  className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle"
+                  className="inline-block w-0.5 h-4 bg-foreground ml-0.5 align-middle"
                   animate={{ opacity: [1, 0, 1] }}
                   transition={{ repeat: Infinity, duration: 0.8 }}
                 />
@@ -136,12 +134,12 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           <div className="w-full mt-1">
             <button
               onClick={() => setShowChunks(!showChunks)}
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors px-2 py-1 rounded-lg hover:bg-muted/50"
+              className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted"
             >
               {showChunks ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               View Source Chunks
               {message.chunksUsed && (
-                <span className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
+                <span className="px-1.5 py-0.5 rounded-full bg-muted text-foreground text-[10px] font-bold">
                   {message.chunksUsed}
                 </span>
               )}
@@ -153,8 +151,8 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
                 className="mt-2 space-y-2 px-1"
               >
                 {message.sourceChunks.map((chunk, i) => (
-                  <div key={i} className="text-xs text-muted-foreground bg-muted/50 border border-border/50 rounded-xl p-3 leading-relaxed">
-                    <span className="text-[10px] font-bold text-primary/60 mr-1">#{i + 1}</span>
+                  <div key={i} className="text-xs text-muted-foreground bg-muted border border-border rounded-xl p-3 leading-relaxed">
+                    <span className="text-[10px] font-bold text-foreground/60 mr-1">#{i + 1}</span>
                     {chunk}
                   </div>
                 ))}
@@ -169,10 +167,10 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           {message.role === 'assistant' && message.content && !message.isStreaming && (
             <button
               onClick={handleCopy}
-              className="p-1 rounded-md text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               title="Copy"
             >
-              {copied ? <Check className="w-3 h-3 text-primary" /> : <Copy className="w-3 h-3" />}
+              {copied ? <Check className="w-3 h-3 text-foreground" /> : <Copy className="w-3 h-3" />}
             </button>
           )}
         </div>

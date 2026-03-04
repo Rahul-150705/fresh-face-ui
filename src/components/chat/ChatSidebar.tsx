@@ -73,9 +73,8 @@ export default function ChatSidebar({
     return (
       <div className="w-14 h-full flex flex-col items-center py-4 gap-4 border-r border-border bg-sidebar shrink-0">
         <button onClick={onToggle}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-          style={{ background: 'var(--gradient-brand)' }}>
-          <GraduationCap className="w-4 h-4 text-primary-foreground" />
+          className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground hover:opacity-90 transition-all">
+          <GraduationCap className="w-4 h-4" />
         </button>
         <button onClick={onNewChat}
           className="w-9 h-9 rounded-xl flex items-center justify-center border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
@@ -101,8 +100,7 @@ export default function ChatSidebar({
       {/* Header */}
       <div className="p-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'var(--gradient-brand)' }}>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <GraduationCap className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="text-sm font-bold text-sidebar-foreground">LearnAI</span>
@@ -130,7 +128,7 @@ export default function ChatSidebar({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search chats..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-sidebar-accent text-sm text-sidebar-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-sidebar-accent text-sm text-sidebar-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/30"
           />
         </div>
       </div>
@@ -154,7 +152,7 @@ export default function ChatSidebar({
                   }`}
                 >
                   {conv.type === 'lecture' ? (
-                    <FileText className="w-4 h-4 text-primary shrink-0" />
+                    <FileText className="w-4 h-4 text-foreground shrink-0" />
                   ) : (
                     <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
                   )}
@@ -180,7 +178,7 @@ export default function ChatSidebar({
       {/* Provider badge */}
       {provider && (
         <div className="px-3 py-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-muted text-foreground">
             <Bot className="w-3 h-3" />
             {provider.charAt(0).toUpperCase() + provider.slice(1)}
           </span>
@@ -190,8 +188,7 @@ export default function ChatSidebar({
       {/* User footer */}
       <div className="p-3 border-t border-sidebar-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0"
-            style={{ background: 'var(--gradient-brand)' }}>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary shrink-0">
             {user?.fullName?.[0]?.toUpperCase() || '?'}
           </div>
           <div className="flex-1 min-w-0">
