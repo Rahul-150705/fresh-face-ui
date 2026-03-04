@@ -54,7 +54,7 @@ function UploadLecture({ onSummaryReady, onLoading, accessToken }: UploadLecture
     if (!selectedFile) {
       setError('Please select a PDF file before submitting.');
       return;
-    }
+    }~
 
     setLoading(true);
     setError('');

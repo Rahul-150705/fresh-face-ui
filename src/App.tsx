@@ -2,8 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
-import DashboardPage from './pages/DashboardPage';
-import LectureDetailPage from './pages/LectureDetailPage';
 import LandingPage from './pages/LandingPage';
 import ChatPage from './components/chat/ChatPage';
 
@@ -58,12 +56,6 @@ function AppRoutes() {
 
       {/* ChatGPT-style home — the main chat experience */}
       <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-
-      {/* Legacy dashboard */}
-      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-
-      {/* Lecture detail page */}
-      <Route path="/lecture/:lectureId" element={<ProtectedRoute><LectureDetailPage /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

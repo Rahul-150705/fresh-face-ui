@@ -1,12 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSummaryStream } from '../../hooks/useSummaryStream';
 import { useChatStream } from '../../hooks/useChatStream';
 import {
-  askQuestion, processLectureByMode, getLectureHistory,
+  askQuestion, processLectureByMode, getLectureHistory, getLecture,
   type LectureHistoryItem,
 } from '../../services/api';
 import type { ChatMessage } from './ChatMessageBubble';
@@ -20,7 +19,6 @@ const nextId = () => `msg-${++msgCounter}-${Date.now()}`;
 
 export default function ChatPage() {
   const { user, accessToken } = useAuth();
-  const navigate = useNavigate();
 
   // Sidebar
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -65,7 +63,7 @@ export default function ChatPage() {
         const chatConvs = prev.filter(c => c.type === 'chat');
         return [...chatConvs, ...convs].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       });
-    }).catch(() => {});
+    }).catch(() => { });
   }, [accessToken]);
 
   // ── Auto-trigger summary stream when lecture is ready ──
@@ -159,17 +157,64 @@ export default function ChatPage() {
   }, [chatStream]);
 
   // ── Select Conversation ──
-  const handleSelectConversation = useCallback((conv: Conversation) => {
+  const handleSelectConversation = useCallback(async (conv: Conversation) => {
     setActiveConvId(conv.id);
-    if (conv.lectureId) {
-      // Navigate to lecture detail page for full lecture interactions
-      navigate(`/lecture/${conv.lectureId}`);
+    if (conv.lectureId && accessToken) {
+      // Load lecture summary directly into chat messages
+      try {
+        const lecture = await getLecture(conv.lectureId, accessToken);
+        setCurrentLectureId(conv.lectureId);
+        setCurrentFileName(lecture.fileName || conv.title);
+
+        // Build chat messages from the lecture data
+        const chatMsgs: ChatMessage[] = [];
+
+        // User upload message
+        chatMsgs.push({
+          id: nextId(),
+          role: 'user',
+          type: 'file_upload',
+          content: '',
+          fileName: lecture.fileName || conv.title,
+          fileSize: 0,
+          pageCount: lecture.pageCount,
+          timestamp: new Date(lecture.processedAt || Date.now()),
+        });
+
+        // AI summary message
+        const summaryText = lecture.summary
+          ? (typeof lecture.summary === 'string'
+            ? lecture.summary
+            : JSON.stringify(lecture.summary, null, 2))
+          : 'Summary not available for this lecture.';
+
+        chatMsgs.push({
+          id: nextId(),
+          role: 'assistant',
+          type: 'summary_stream',
+          content: summaryText,
+          isStreaming: false,
+          timestamp: new Date(lecture.processedAt || Date.now()),
+        });
+
+        setMessages(chatMsgs);
+      } catch {
+        // If fetch fails, show error in chat
+        setMessages([{
+          id: nextId(),
+          role: 'assistant',
+          type: 'error',
+          content: 'Failed to load lecture summary. Please try again.',
+          isStreaming: false,
+          timestamp: new Date(),
+        }]);
+      }
     } else {
       // Load chat conversation messages (stored in state for now)
       setCurrentLectureId(null);
       setCurrentFileName('');
     }
-  }, [navigate]);
+  }, [accessToken]);
 
   // ── Delete Conversation ──
   const handleDeleteConversation = useCallback((id: string) => {
