@@ -1,15 +1,15 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Upload, MessageSquare, Brain, BookOpen } from 'lucide-react';
+import { Sparkles, Upload, FileText, Brain, MessageSquare } from 'lucide-react';
 
 interface ChatEmptyStateProps {
   onUploadClick: () => void;
   userName?: string;
 }
 
-const SUGGESTIONS = [
-  { icon: MessageSquare, text: 'Explain quantum entanglement simply' },
-  { icon: Brain, text: 'What are the key differences between TCP and UDP?' },
-  { icon: BookOpen, text: 'Summarize the theory of relativity' },
+const FEATURES = [
+  { icon: FileText, text: 'AI-powered lecture summaries' },
+  { icon: MessageSquare, text: 'Ask questions about your content' },
+  { icon: Brain, text: 'Generate quizzes to test your knowledge' },
 ];
 
 export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptyStateProps) {
@@ -36,7 +36,7 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
             {userName ? `Hi ${userName.split(' ')[0]}, how can I help?` : 'How can I help you learn today?'}
           </h1>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-            Ask me anything or upload a PDF lecture for an AI-powered summary, Q&A, and quiz.
+            Upload a PDF lecture to get started. I'll generate a summary, and then you can ask questions about it.
           </p>
         </div>
 
@@ -52,20 +52,20 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
           Upload a PDF Lecture
         </motion.button>
 
-        {/* Suggestion chips */}
+        {/* Feature list */}
         <div className="w-full space-y-2 mt-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Try asking</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">What you can do</p>
           <div className="grid gap-2">
-            {SUGGESTIONS.map((s, i) => (
+            {FEATURES.map((f, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground cursor-default hover:border-foreground/20 hover:text-foreground transition-all"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground"
               >
-                <s.icon className="w-4 h-4 text-foreground shrink-0" />
-                {s.text}
+                <f.icon className="w-4 h-4 text-foreground shrink-0" />
+                {f.text}
               </motion.div>
             ))}
           </div>
@@ -74,3 +74,4 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
     </div>
   );
 }
+

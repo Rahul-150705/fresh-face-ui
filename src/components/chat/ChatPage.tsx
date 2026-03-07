@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSummaryStream } from '../../hooks/useSummaryStream';
-import { useChatStream } from '../../hooks/useChatStream';
 import {
   askQuestion, processLectureByMode, getLectureHistory, getLecture,
   type LectureHistoryItem,
@@ -33,13 +32,11 @@ export default function ChatPage() {
   const [currentLectureId, setCurrentLectureId] = useState<string | null>(null);
   const [currentFileName, setCurrentFileName] = useState('');
 
-  // Streaming hooks
+  // Streaming hook
   const summaryStream = useSummaryStream(currentLectureId, accessToken);
-  const chatStream = useChatStream();
 
   // Track current streaming AI message
   const aiMsgIdRef = useRef<string | null>(null);
-  const chatAiMsgIdRef = useRef<string | null>(null);
   const hasAutoTriggeredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentConvIdRef = useRef<string | null>(null);
@@ -114,36 +111,7 @@ export default function ChatPage() {
     }
   }, [summaryStream.error]);
 
-  // ── Update AI message with chat stream ──
-  useEffect(() => {
-    if (!chatAiMsgIdRef.current) return;
-    setMessages(prev =>
-      prev.map(m =>
-        m.id === chatAiMsgIdRef.current
-          ? { ...m, content: chatStream.response, isStreaming: chatStream.isStreaming }
-          : m
-      )
-    );
-  }, [chatStream.response, chatStream.isStreaming]);
 
-  useEffect(() => {
-    if (chatStream.isComplete && chatAiMsgIdRef.current) {
-      chatAiMsgIdRef.current = null;
-    }
-  }, [chatStream.isComplete]);
-
-  useEffect(() => {
-    if (chatStream.error && chatAiMsgIdRef.current) {
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === chatAiMsgIdRef.current
-            ? { ...m, content: chatStream.error!, type: 'error' as const, isStreaming: false }
-            : m
-        )
-      );
-      chatAiMsgIdRef.current = null;
-    }
-  }, [chatStream.error]);
 
   // ── New Chat ──
   const handleNewChat = useCallback(() => {
@@ -152,9 +120,7 @@ export default function ChatPage() {
     setCurrentLectureId(null);
     setCurrentFileName('');
     aiMsgIdRef.current = null;
-    chatAiMsgIdRef.current = null;
-    chatStream.reset();
-  }, [chatStream]);
+  }, []);
 
   // ── Select Conversation ──
   const handleSelectConversation = useCallback(async (conv: Conversation) => {
@@ -222,9 +188,9 @@ export default function ChatPage() {
     if (activeConvId === id) handleNewChat();
   }, [activeConvId, handleNewChat]);
 
-  // ── Send Text Message ──
+  // ── Send Text Message (only works after PDF upload) ──
   const handleSendMessage = useCallback(async (text: string) => {
-    if (!accessToken || isAnswering) return;
+    if (!accessToken || isAnswering || !currentLectureId) return;
 
     const userMsg: ChatMessage = {
       id: nextId(), role: 'user', type: 'text', content: text, timestamp: new Date(),
@@ -237,49 +203,29 @@ export default function ChatPage() {
 
     setMessages(prev => [...prev, userMsg, aiMsg]);
 
-    // Create or update conversation
-    if (!activeConvId) {
-      const convId = `chat-${Date.now()}`;
-      const conv: Conversation = {
-        id: convId,
-        title: text.slice(0, 50) + (text.length > 50 ? '...' : ''),
-        type: 'chat',
-        createdAt: new Date(),
-      };
-      setConversations(prev => [conv, ...prev]);
-      setActiveConvId(convId);
+    // RAG Q&A on the uploaded lecture
+    setIsAnswering(true);
+    try {
+      const res = await askQuestion(currentLectureId, text, accessToken);
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === aiId
+            ? { ...m, content: res.answer, isStreaming: false, sourceChunks: res.sourceChunks, chunksUsed: res.chunksUsed }
+            : m
+        )
+      );
+    } catch (err: any) {
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === aiId
+            ? { ...m, content: err.message || 'Failed to get answer.', type: 'error' as const, isStreaming: false }
+            : m
+        )
+      );
+    } finally {
+      setIsAnswering(false);
     }
-
-    if (currentLectureId) {
-      // Follow-up RAG Q&A
-      setIsAnswering(true);
-      try {
-        const res = await askQuestion(currentLectureId, text, accessToken);
-        setMessages(prev =>
-          prev.map(m =>
-            m.id === aiId
-              ? { ...m, content: res.answer, isStreaming: false, sourceChunks: res.sourceChunks, chunksUsed: res.chunksUsed }
-              : m
-          )
-        );
-      } catch (err: any) {
-        setMessages(prev =>
-          prev.map(m =>
-            m.id === aiId
-              ? { ...m, content: err.message || 'Failed to get answer.', type: 'error' as const, isStreaming: false }
-              : m
-          )
-        );
-      } finally {
-        setIsAnswering(false);
-      }
-    } else {
-      // General chat — use streaming via WebSocket
-      chatAiMsgIdRef.current = aiId;
-      const convId = `stream-${Date.now()}`;
-      chatStream.startStream(convId, text, accessToken);
-    }
-  }, [accessToken, isAnswering, activeConvId, currentLectureId, chatStream]);
+  }, [accessToken, isAnswering, currentLectureId]);
 
   // ── File Upload ──
   const handleFileSelect = useCallback(async (file: File) => {
@@ -341,18 +287,7 @@ export default function ChatPage() {
     }
   }, [accessToken]);
 
-  // ── Stop Generation ──
-  const handleStop = useCallback(() => {
-    if (chatAiMsgIdRef.current && chatStream.isStreaming) {
-      // For general chat, try stop endpoint
-      const convId = `stream-${Date.now()}`;
-      if (accessToken) chatStream.stopStream(convId, accessToken);
-    }
-    // For summary stream we can't stop it (no backend support yet)
-  }, [chatStream, accessToken]);
-
-  const isCurrentlyStreaming = summaryStream.isStreaming || chatStream.isStreaming;
-  const currentStreamContent = summaryStream.isStreaming ? summaryStream.summary : chatStream.response;
+  const isCurrentlyStreaming = summaryStream.isStreaming;
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -411,7 +346,7 @@ export default function ChatPage() {
             messages={messages}
             isStreaming={isCurrentlyStreaming}
             isAnswering={isAnswering}
-            streamingContent={currentStreamContent}
+            streamingContent={summaryStream.summary}
           />
         )}
 
@@ -419,8 +354,7 @@ export default function ChatPage() {
         <ChatInputBar
           onSendMessage={handleSendMessage}
           onFileSelect={handleFileSelect}
-          onStop={handleStop}
-          disabled={false}
+          disabled={!currentLectureId || (!summaryStream.isComplete && !summaryStream.summary)}
           isStreaming={isCurrentlyStreaming}
           isAnswering={isAnswering}
           hasLecture={!!currentLectureId && (summaryStream.isComplete || !!summaryStream.summary)}

@@ -44,6 +44,9 @@ export interface UseSummaryStreamReturn {
  * @param authToken  — JWT access token for the REST trigger call
  * @param backendUrl — base URL of the Spring Boot backend (default: '' for Vite proxy)
  */
+/** Delay (ms) between each drip tick — 1 word per 40ms ≈ 25 words/sec. */
+const DRIP_DELAY_MS = 70;
+
 export function useSummaryStream(
     lectureId: string | null | undefined,
     authToken: string | null,
@@ -58,10 +61,63 @@ export function useSummaryStream(
     const stompClientRef = useRef<Client | null>(null);
     const triggerInFlightRef = useRef(false);
 
-    // Reset the trigger guard when lectureId changes (new lecture = fresh start)
+    // ── Drip-feed buffer — ALL chunks flow through this for uniform speed ───
+    const wordQueueRef = useRef<string[]>([]);
+    const dripTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const pendingCompleteRef = useRef<string | null>(null);
+
+    /** Start the drip timer if not already running. */
+    const startDrip = useCallback(() => {
+        if (dripTimerRef.current) return;
+        dripTimerRef.current = setInterval(() => {
+            if (wordQueueRef.current.length === 0) {
+                clearInterval(dripTimerRef.current!);
+                dripTimerRef.current = null;
+                // Apply deferred SUMMARY_COMPLETED if it arrived while dripping
+                if (pendingCompleteRef.current !== null) {
+                    setSummary(pendingCompleteRef.current);
+                    pendingCompleteRef.current = null;
+                    setIsStreaming(false);
+                    setIsComplete(true);
+                }
+                return;
+            }
+            // Flush 1 word per tick for a visible, smooth streaming effect
+            const word = wordQueueRef.current.shift()!;
+            setSummary(prev => prev + word);
+        }, DRIP_DELAY_MS);
+    }, []);
+
+    /** Stop dripping and flush remaining words instantly. */
+    const flushDrip = useCallback(() => {
+        if (dripTimerRef.current) {
+            clearInterval(dripTimerRef.current);
+            dripTimerRef.current = null;
+        }
+        if (wordQueueRef.current.length > 0) {
+            const remaining = wordQueueRef.current.join('');
+            wordQueueRef.current = [];
+            setSummary(prev => prev + remaining);
+        }
+    }, []);
+
+    // Clean up timer on unmount
+    useEffect(() => {
+        return () => {
+            if (dripTimerRef.current) {
+                clearInterval(dripTimerRef.current);
+                dripTimerRef.current = null;
+            }
+        };
+    }, []);
+
+    // Reset when lectureId changes
     useEffect(() => {
         triggerInFlightRef.current = false;
-    }, [lectureId]);
+        flushDrip();
+        wordQueueRef.current = [];
+        pendingCompleteRef.current = null;
+    }, [lectureId, flushDrip]);
 
     // ── 1. WebSocket connection + subscription ──────────────────────────────
 
@@ -84,22 +140,35 @@ export function useSummaryStream(
                             const payload: SummaryStreamPayload = JSON.parse(message.body);
 
                             switch (payload.type) {
-                                case 'SUMMARY_CHUNK':
-                                    // Append each token — this creates the live typing effect
-                                    setSummary(prev => prev + (payload.chunk ?? ''));
+                                case 'SUMMARY_CHUNK': {
+                                    const chunk = payload.chunk ?? '';
+                                    if (!chunk) break;
+
+                                    // Split into word-level tokens preserving whitespace
+                                    // e.g. "hello world\n" → ["hello", " ", "world", "\n"]
+                                    const tokens = chunk.split(/(\s+)/);
+                                    wordQueueRef.current.push(...tokens);
+                                    startDrip();
+
                                     setIsStreaming(true);
                                     break;
+                                }
 
                                 case 'SUMMARY_COMPLETED':
-                                    // Replace with the authoritative full text from the server
-                                    if (payload.fullSummary) {
-                                        setSummary(payload.fullSummary);
+                                    // If still dripping words, defer the completion
+                                    if (wordQueueRef.current.length > 0 || dripTimerRef.current) {
+                                        pendingCompleteRef.current = payload.fullSummary ?? null;
+                                    } else {
+                                        if (payload.fullSummary) {
+                                            setSummary(payload.fullSummary);
+                                        }
+                                        setIsStreaming(false);
+                                        setIsComplete(true);
                                     }
-                                    setIsStreaming(false);
-                                    setIsComplete(true);
                                     break;
 
                                 case 'SUMMARY_ERROR':
+                                    flushDrip();
                                     setError(payload.error ?? 'An unknown error occurred.');
                                     setIsStreaming(false);
                                     break;
@@ -137,7 +206,7 @@ export function useSummaryStream(
             stompClientRef.current = null;
             setIsConnected(false);
         };
-    }, [lectureId, backendUrl]);
+    }, [lectureId, backendUrl, startDrip, flushDrip]);
 
     // ── 2. Trigger streaming via REST ───────────────────────────────────────
 
@@ -152,6 +221,9 @@ export function useSummaryStream(
         triggerInFlightRef.current = true;
 
         // Reset state for new stream
+        flushDrip();
+        wordQueueRef.current = [];
+        pendingCompleteRef.current = null;
         setSummary('');
         setIsStreaming(false);
         setIsComplete(false);
@@ -176,31 +248,10 @@ export function useSummaryStream(
             setError(err.message || 'Failed to start summarization.');
             triggerInFlightRef.current = false; // allow retry on error
         }
-    }, [lectureId, authToken, backendUrl]);
+    }, [lectureId, authToken, backendUrl, flushDrip]);
 
 
-    // ── 3. Page refresh recovery — load saved summary from REST ─────────────
 
-    useEffect(() => {
-        if (!lectureId || !authToken) return;
-
-        (async () => {
-            try {
-                const res = await fetch(`${backendUrl}/api/lecture/${lectureId}`, {
-                    headers: { Authorization: `Bearer ${authToken}` },
-                });
-                if (!res.ok) return;
-
-                const lecture = await res.json();
-                if (lecture.summary && typeof lecture.summary === 'string' && lecture.summary.trim()) {
-                    setSummary(lecture.summary);
-                    setIsComplete(true);
-                }
-            } catch {
-                // Non-fatal — user can still trigger a fresh stream
-            }
-        })();
-    }, [lectureId, authToken, backendUrl]);
 
     return { summary, isStreaming, isComplete, isConnected, error, triggerStream };
 }

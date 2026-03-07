@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import ChatMessageBubble, { type ChatMessage } from './ChatMessageBubble';
 import ChatInputBar from './ChatInputBar';
-import ScrollToBottom from './ScrollToBottom';
+
 import { askQuestion, processLectureByMode } from '../../services/api';
 
 // ── Props ────────────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ export default function ChatView({
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const userScrolledUpRef = useRef(false);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAnswering, setIsAnswering] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -128,16 +128,7 @@ export default function ChatView({
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    const scrolledUp = !isNearBottom(scrollRef.current);
-    userScrolledUpRef.current = scrolledUp;
-    setShowScrollBtn(scrolledUp);
-  }, []);
-
-  const scrollToBottom = useCallback(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-    userScrolledUpRef.current = false;
-    setShowScrollBtn(false);
+    userScrolledUpRef.current = !isNearBottom(scrollRef.current);
   }, []);
 
   // ── Follow-up question handler ─────────────────────────────────────────────
@@ -173,12 +164,12 @@ export default function ChatView({
         prev.map(m =>
           m.id === aiId
             ? {
-                ...m,
-                content: res.answer,
-                isStreaming: false,
-                sourceChunks: res.sourceChunks,
-                chunksUsed: res.chunksUsed,
-              }
+              ...m,
+              content: res.answer,
+              isStreaming: false,
+              sourceChunks: res.sourceChunks,
+              chunksUsed: res.chunksUsed,
+            }
             : m
         )
       );
@@ -360,7 +351,7 @@ export default function ChatView({
           </motion.div>
         )}
 
-        <ScrollToBottom visible={showScrollBtn} onClick={scrollToBottom} />
+
       </div>
 
       {/* ── Input bar ── */}

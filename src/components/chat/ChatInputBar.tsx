@@ -32,7 +32,7 @@ export default function ChatInputBar({
       ? 'Thinking...'
       : hasLecture
         ? 'Ask a question about this lecture...'
-        : 'Message LearnAI...';
+        : 'Upload a PDF to start asking questions...';
 
   const canSend = text.trim().length > 0 && !disabled && !isStreaming && !isAnswering;
   const showStop = isStreaming && onStop;
@@ -111,9 +111,8 @@ export default function ChatInputBar({
             whileTap={canSend ? { scale: 0.95 } : {}}
             onClick={handleSubmit}
             disabled={!canSend}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-30 ${
-              canSend ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-            }`}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-30 ${canSend ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+              }`}
             style={canSend ? { boxShadow: 'var(--shadow-brand)' } : undefined}
           >
             {isAnswering ? (

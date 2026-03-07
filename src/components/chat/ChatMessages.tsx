@@ -1,8 +1,7 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import ChatMessageBubble, { type ChatMessage } from './ChatMessageBubble';
-import ScrollToBottom from './ScrollToBottom';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -14,7 +13,6 @@ interface ChatMessagesProps {
 export default function ChatMessages({ messages, isStreaming, isAnswering, streamingContent }: ChatMessagesProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const userScrolledUpRef = useRef(false);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   const isNearBottom = (el: HTMLElement, threshold = 100) =>
     el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
@@ -35,16 +33,7 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
-    const up = !isNearBottom(scrollRef.current);
-    userScrolledUpRef.current = up;
-    setShowScrollBtn(up);
-  }, []);
-
-  const scrollToBottom = useCallback(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-    userScrolledUpRef.current = false;
-    setShowScrollBtn(false);
+    userScrolledUpRef.current = !isNearBottom(scrollRef.current);
   }, []);
 
   return (
@@ -79,7 +68,7 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
         )}
       </div>
 
-      <ScrollToBottom visible={showScrollBtn} onClick={scrollToBottom} />
+
     </div>
   );
 }
