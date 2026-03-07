@@ -51,9 +51,9 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 relative"
+      className="flex-1 overflow-y-auto py-6 relative"
     >
-      <div className="max-w-3xl mx-auto space-y-5">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-6">
         <AnimatePresence initial={false}>
           {messages.map(msg => (
             <ChatMessageBubble key={msg.id} message={msg} />
