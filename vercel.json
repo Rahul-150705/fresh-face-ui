@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://teaching-assistant-backend.onrender.com/api/:path*"
+      "destination": "https://ai-summary-91ww.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
