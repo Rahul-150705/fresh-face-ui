@@ -21,7 +21,7 @@ export interface UseChatStreamReturn {
   reset: () => void;
 }
 
-export function useChatStream(backendUrl = ''): UseChatStreamReturn {
+export function useChatStream(backendUrl = 'https://ai-summary-91ww.onrender.com'): UseChatStreamReturn {
   const [response, setResponse] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isComplete, setIsComplete] = useState(false);

@@ -42,7 +42,7 @@ export interface UseSummaryStreamReturn {
  *
  * @param lectureId  — UUID of the lecture
  * @param authToken  — JWT access token for the REST trigger call
- * @param backendUrl — base URL of the Spring Boot backend (default: '' for Vite proxy)
+ * @param backendUrl — base URL of the Spring Boot backend (default: 'https://ai-summary-91ww.onrender.com' to bypass Vercel proxy)
  */
 /** Delay (ms) between each drip tick — 1 word per 40ms ≈ 25 words/sec. */
 const DRIP_DELAY_MS = 70;
@@ -50,7 +50,7 @@ const DRIP_DELAY_MS = 70;
 export function useSummaryStream(
     lectureId: string | null | undefined,
     authToken: string | null,
-    backendUrl = ''
+    backendUrl = 'https://ai-summary-91ww.onrender.com'
 ): UseSummaryStreamReturn {
     const [summary, setSummary] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
