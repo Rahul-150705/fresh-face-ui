@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import SockJS from 'sockjs-client';
 import { Client, type IMessage } from '@stomp/stompjs';
+import { BASE_URL } from '../config';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ const DRIP_DELAY_MS = 18;
 export function useSummaryStream(
     lectureId: string | null | undefined,
     authToken: string | null,
-    backendUrl = 'https://ai-summary-91ww.onrender.com'
+    backendUrl = BASE_URL
 ): UseSummaryStreamReturn {
     const [summary, setSummary] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);

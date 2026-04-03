@@ -1,4 +1,7 @@
-const BASE_URL = 'https://ai-summary-91ww.onrender.com';
+import { BASE_URL } from '../config';
+
+// Using centralized BASE_URL from config.ts
+// const BASE_URL = 'https://ai-summary-91ww.onrender.com';
 
 async function safeJson(res: Response): Promise<any> {
   const text = await res.text();

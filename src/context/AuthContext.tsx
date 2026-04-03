@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { BASE_URL } from '../config';
 
 interface User {
   email: string;
@@ -38,7 +39,8 @@ async function safeJson(res: Response): Promise<any> {
   }
 }
 
-const BASE_URL = 'https://ai-summary-91ww.onrender.com';
+// Using centralized BASE_URL from config.ts
+// const BASE_URL = 'http://localhost:8080';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

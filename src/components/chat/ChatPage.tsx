@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Menu } from 'lucide-react';
+import { ACTIVE_MODEL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import { useSummaryStream } from '../../hooks/useSummaryStream';
 import {
@@ -331,7 +332,7 @@ export default function ChatPage() {
             </span>
           </div>
           <span className="text-[11px] font-medium text-muted-foreground px-2.5 py-1 rounded-full bg-muted">
-            llama3.2
+            {ACTIVE_MODEL}
           </span>
         </div>
 

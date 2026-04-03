@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import SockJS from 'sockjs-client';
 import { Client, type IMessage } from '@stomp/stompjs';
+import { BASE_URL } from '../config';
 
 interface ChatStreamPayload {
   type: 'CHAT_CHUNK' | 'CHAT_COMPLETED' | 'CHAT_ERROR';
@@ -21,7 +22,7 @@ export interface UseChatStreamReturn {
   reset: () => void;
 }
 
-export function useChatStream(backendUrl = 'https://ai-summary-91ww.onrender.com'): UseChatStreamReturn {
+export function useChatStream(backendUrl = BASE_URL): UseChatStreamReturn {
   const [response, setResponse] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
