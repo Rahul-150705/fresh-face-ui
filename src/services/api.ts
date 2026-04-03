@@ -191,9 +191,13 @@ export interface AskQuestionResponse {
 }
 
 export async function askQuestion(lectureId: string, question: string, accessToken: string): Promise<AskQuestionResponse> {
-  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/ask`, { method: 'POST', headers: jsonHeaders(accessToken), body: JSON.stringify({ question }) });
+  const res = await fetch(`${BASE_URL}/api/advanced-rag/query`, { 
+    method: 'POST', 
+    headers: jsonHeaders(accessToken), 
+    body: JSON.stringify({ question, lectureId }) 
+  });
   const data = await safeJson(res);
-  if (!res.ok) throw new Error(data?.error || `Q&A failed (${res.status})`);
+  if (!res.ok) throw new Error(data?.error || `Advanced Q&A failed (${res.status})`);
   if (!data) throw new Error('Server returned an empty response.');
   return data;
 }
