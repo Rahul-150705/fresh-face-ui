@@ -44,8 +44,8 @@ export interface UseSummaryStreamReturn {
  * @param authToken  — JWT access token for the REST trigger call
  * @param backendUrl — base URL of the Spring Boot backend (default: 'https://ai-summary-91ww.onrender.com' to bypass Vercel proxy)
  */
-/** Delay (ms) between each drip tick — 1 word per 40ms ≈ 25 words/sec. */
-const DRIP_DELAY_MS = 70;
+/** Delay (ms) between each drip tick — faster tick reduces visible paste bursts. */
+const DRIP_DELAY_MS = 18;
 
 export function useSummaryStream(
     lectureId: string | null | undefined,
@@ -75,16 +75,29 @@ export function useSummaryStream(
                 dripTimerRef.current = null;
                 // Apply deferred SUMMARY_COMPLETED if it arrived while dripping
                 if (pendingCompleteRef.current !== null) {
-                    setSummary(pendingCompleteRef.current);
+                    // The drip already built the correct text — do NOT overwrite it.
+                    // Only fall back to fullSummary if nothing was dripped at all.
+                    setSummary(prev => {
+                        if (!prev && pendingCompleteRef.current) {
+                            return pendingCompleteRef.current;
+                        }
+                        return prev;
+                    });
                     pendingCompleteRef.current = null;
                     setIsStreaming(false);
                     setIsComplete(true);
                 }
                 return;
             }
-            // Flush 1 word per tick for a visible, smooth streaming effect
-            const word = wordQueueRef.current.shift()!;
-            setSummary(prev => prev + word);
+            // Batch-flush when backlogged to prevent visible paste bursts;
+            // otherwise drip one word at a time for a smooth typing effect.
+            if (wordQueueRef.current.length > 30) {
+                const words = wordQueueRef.current.splice(0, 3);
+                setSummary(prev => prev + words.join(''));
+            } else {
+                const word = wordQueueRef.current.shift()!;
+                setSummary(prev => prev + word);
+            }
         }, DRIP_DELAY_MS);
     }, []);
 
