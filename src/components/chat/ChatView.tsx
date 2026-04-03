@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, MessageSquare, Brain, Copy, Download,
-  ArrowLeft, Check, Wifi, WifiOff
+  ArrowLeft, Check, Wifi, WifiOff, RefreshCw
 } from 'lucide-react';
 import ChatMessageBubble, { type ChatMessage } from './ChatMessageBubble';
 import ChatInputBar from './ChatInputBar';
@@ -186,6 +186,43 @@ export default function ChatView({
     }
   }, [lectureId, accessToken, isAnswering]);
 
+  // ── Re-indexing / AI Repair handler ────────────────────────────────────────
+
+  const reindexInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReindex = useCallback(async (file: File) => {
+    if (!lectureId || isAnswering) return;
+    
+    const repairId = nextId();
+    setMessages(prev => [...prev, {
+      id: repairId,
+      role: 'assistant',
+      type: 'text',
+      content: '🛠️ AI is currently repairing its knowledge base for this PDF...',
+      isStreaming: true,
+      timestamp: new Date()
+    }]);
+    setIsAnswering(true);
+
+    try {
+      await import('../../services/api').then(api => api.reindexLecture(lectureId, file, accessToken));
+      setMessages(prev => prev.map(m => m.id === repairId ? {
+        ...m,
+        content: '✅ AI Brain Repaired! You can now ask questions about this PDF again.',
+        isStreaming: false
+      } : m));
+    } catch (err: any) {
+      setMessages(prev => prev.map(m => m.id === repairId ? {
+        ...m,
+        content: `❌ Repair failed: ${err.message}`,
+        type: 'error',
+        isStreaming: false
+      } : m));
+    } finally {
+      setIsAnswering(false);
+    }
+  }, [lectureId, accessToken, isAnswering]);
+
   // ── New file upload handler ────────────────────────────────────────────────
 
   const handleFileSelect = useCallback(async (file: File) => {
@@ -274,6 +311,24 @@ export default function ChatView({
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
+          <input
+            type="file"
+            ref={reindexInputRef}
+            className="hidden"
+            accept=".pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleReindex(file);
+            }}
+          />
+          <button
+            onClick={() => reindexInputRef.current?.click()}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Repair AI Knowledge (Re-upload PDF)"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+
           {isComplete && streamingSummary && (
             <>
               <button onClick={handleCopy}

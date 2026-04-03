@@ -153,8 +153,14 @@ export async function deleteLecture(lectureId: string, accessToken: string) {
   if (!res.ok) { const data = await safeJson(res); throw new Error(data?.error || `Delete failed (${res.status})`); }
 }
 
-export async function reindexLecture(lectureId: string, accessToken: string) {
-  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/reindex`, { method: 'POST', headers: authHeaders(accessToken) });
+export async function reindexLecture(lectureId: string, file: File, accessToken: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/reindex`, { 
+    method: 'POST', 
+    headers: authHeaders(accessToken),
+    body: formData 
+  });
   const data = await safeJson(res);
   if (!res.ok) throw new Error(data?.error || `Reindex failed (${res.status})`);
   return data;
