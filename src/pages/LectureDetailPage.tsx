@@ -85,6 +85,7 @@ export default function LectureDetailPage() {
   const [expandedChunks, setExpandedChunks] = useState<Record<string, boolean>>({});
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Quiz state ──
   const [quizPhase, setQuizPhase] = useState<'idle' | 'generating' | 'quiz' | 'submitting' | 'results'>('idle');
@@ -142,14 +143,22 @@ export default function LectureDetailPage() {
   // ── Reindex ──
   const handleReindex = async () => {
     if (!lectureId || !accessToken || reindexing) return;
+    fileInputRef.current?.click(); // prompt user for file
+  };
+
+  const handleReindexFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !lectureId || !accessToken) return;
     setReindexing(true);
-    setReindexSuccess(false);
     try {
-      await reindexLecture(lectureId, accessToken);
+      await reindexLecture(lectureId, file, accessToken);
       setReindexSuccess(true);
       setTimeout(() => setReindexSuccess(false), 5000);
     } catch { }
-    finally { setReindexing(false); }
+    finally { 
+      setReindexing(false); 
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   // ── Quiz helpers ──
@@ -226,6 +235,8 @@ export default function LectureDetailPage() {
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-[0.03]" style={{ background: 'hsl(263 70% 50%)' }} />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-[0.03]" style={{ background: 'hsl(217 91% 60%)' }} />
       </div>
+
+      <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleReindexFile} />
 
       {/* Header */}
       <header className="shrink-0 glass-card border-b border-border/50 z-10">
