@@ -41,6 +41,7 @@ export default function ChatPage() {
   const hasAutoTriggeredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentConvIdRef = useRef<string | null>(null);
+  const pendingUploadMode = useRef<'chat' | 'summary'>('chat');
 
   // Keep ref in sync
   useEffect(() => { currentConvIdRef.current = activeConvId; }, [activeConvId]);
@@ -232,17 +233,23 @@ export default function ChatPage() {
   const handleFileSelect = useCallback(async (file: File) => {
     if (!accessToken) return;
 
+    const mode = pendingUploadMode.current;
+
     const userMsg: ChatMessage = {
       id: nextId(), role: 'user', type: 'file_upload', content: '',
       fileName: file.name, fileSize: file.size, timestamp: new Date(),
     };
 
     const aiId = nextId();
-    aiMsgIdRef.current = aiId;
+    aiMsgIdRef.current = mode === 'summary' ? aiId : null;
 
     const aiMsg: ChatMessage = {
-      id: aiId, role: 'assistant', type: 'summary_stream', content: '',
-      isStreaming: true, timestamp: new Date(),
+      id: aiId, 
+      role: 'assistant', 
+      type: mode === 'summary' ? 'summary_stream' : 'text', 
+      content: mode === 'summary' ? '' : 'I\'ve successfully processed your PDF! Feel free to ask me any questions about it.',
+      isStreaming: mode === 'summary', 
+      timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMsg, aiMsg]);
@@ -339,7 +346,10 @@ export default function ChatPage() {
         {/* Messages or empty state */}
         {messages.length === 0 ? (
           <ChatEmptyState
-            onUploadClick={() => fileInputRef.current?.click()}
+            onUploadClick={(mode) => {
+              pendingUploadMode.current = mode;
+              fileInputRef.current?.click();
+            }}
             userName={user?.fullName}
           />
         ) : (
@@ -354,11 +364,14 @@ export default function ChatPage() {
         {/* Input bar */}
         <ChatInputBar
           onSendMessage={handleSendMessage}
-          onFileSelect={handleFileSelect}
-          disabled={!currentLectureId || (!summaryStream.isComplete && !summaryStream.summary)}
+          onFileSelect={(file) => {
+            pendingUploadMode.current = 'chat';
+            handleFileSelect(file);
+          }}
+          disabled={!currentLectureId || (pendingUploadMode.current === 'summary' && !summaryStream.isComplete && !summaryStream.summary)}
           isStreaming={isCurrentlyStreaming}
           isAnswering={isAnswering}
-          hasLecture={!!currentLectureId && (summaryStream.isComplete || !!summaryStream.summary)}
+          hasLecture={!!currentLectureId && (pendingUploadMode.current === 'chat' || summaryStream.isComplete || !!summaryStream.summary)}
         />
       </div>
     </div>

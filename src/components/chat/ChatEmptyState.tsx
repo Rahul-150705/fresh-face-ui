@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Sparkles, Upload, FileText, Brain, MessageSquare } from 'lucide-react';
 
 interface ChatEmptyStateProps {
-  onUploadClick: () => void;
+  onUploadClick: (mode: 'chat' | 'summary') => void;
   userName?: string;
 }
 
@@ -40,17 +40,30 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
           </p>
         </div>
 
-        {/* Upload CTA */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={onUploadClick}
-          className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary transition-all hover:opacity-90"
-          style={{ boxShadow: 'var(--shadow-brand)' }}
-        >
-          <Upload className="w-4 h-4" />
-          Upload a PDF Lecture
-        </motion.button>
+        {/* Upload CTAs */}
+        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onUploadClick('chat')}
+            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-foreground bg-card border border-border transition-all hover:bg-muted"
+            style={{ boxShadow: 'var(--shadow-sm)' }}
+          >
+            <MessageSquare className="w-4 h-4" />
+            Chat with PDF
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => onUploadClick('summary')}
+            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary transition-all hover:opacity-90"
+            style={{ boxShadow: 'var(--shadow-brand)' }}
+          >
+            <FileText className="w-4 h-4" />
+            Summarize PDF
+          </motion.button>
+        </div>
 
         {/* Feature list */}
         <div className="w-full space-y-2 mt-4">
