@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, MessageSquare, FileText, Trash2, LogOut,
   ChevronLeft, Search, GraduationCap, Bot
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getLectureHistory, deleteLecture, checkHealth, type LectureHistoryItem } from '../../services/api';
+import { checkHealth, type LectureHistoryItem } from '../../services/api';
 
 export interface Conversation {
   id: string;
@@ -54,7 +54,7 @@ export default function ChatSidebar({
   collapsed,
   onToggle,
 }: ChatSidebarProps) {
-  const { user, accessToken, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [search, setSearch] = useState('');
   const [provider, setProvider] = useState<string | null>(null);
   const [hoverDeleteId, setHoverDeleteId] = useState<string | null>(null);
@@ -73,7 +73,8 @@ export default function ChatSidebar({
     return (
       <div className="w-14 h-full flex flex-col items-center py-4 gap-4 border-r border-border bg-sidebar shrink-0">
         <button onClick={onToggle}
-          className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary text-primary-foreground hover:opacity-90 transition-all">
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-white hover:opacity-90 transition-all"
+          style={{ background: 'var(--gradient-brand)' }}>
           <GraduationCap className="w-4 h-4" />
         </button>
         <button onClick={onNewChat}
@@ -100,8 +101,9 @@ export default function ChatSidebar({
       {/* Header */}
       <div className="p-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <GraduationCap className="w-4 h-4 text-primary-foreground" />
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: 'var(--gradient-brand)' }}>
+            <GraduationCap className="w-4 h-4 text-white" />
           </div>
           <span className="text-sm font-bold text-sidebar-foreground">LearnAI</span>
         </div>
@@ -114,7 +116,7 @@ export default function ChatSidebar({
       {/* New chat button */}
       <div className="px-3 pb-2 shrink-0">
         <button onClick={onNewChat}
-          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-sidebar-border text-sm font-semibold text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-primary/20 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors">
           <Plus className="w-4 h-4" />
           New Chat
         </button>
@@ -128,7 +130,7 @@ export default function ChatSidebar({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search chats..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-sidebar-accent text-sm text-sidebar-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-sidebar-accent text-sm text-sidebar-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
         </div>
       </div>
@@ -147,12 +149,12 @@ export default function ChatSidebar({
                   onMouseLeave={() => setHoverDeleteId(null)}
                   className={`group flex items-center gap-2.5 px-3 py-2.5 rounded-xl cursor-pointer text-sm transition-colors ${
                     activeConversationId === conv.id
-                      ? 'bg-sidebar-accent text-sidebar-foreground font-semibold'
+                      ? 'bg-primary/10 text-primary font-semibold'
                       : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50'
                   }`}
                 >
                   {conv.type === 'lecture' ? (
-                    <FileText className="w-4 h-4 text-foreground shrink-0" />
+                    <FileText className="w-4 h-4 text-primary shrink-0" />
                   ) : (
                     <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0" />
                   )}
@@ -178,7 +180,7 @@ export default function ChatSidebar({
       {/* Provider badge */}
       {provider && (
         <div className="px-3 py-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-muted text-foreground">
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
             <Bot className="w-3 h-3" />
             {provider.charAt(0).toUpperCase() + provider.slice(1)}
           </span>
@@ -188,7 +190,8 @@ export default function ChatSidebar({
       {/* User footer */}
       <div className="p-3 border-t border-sidebar-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-primary-foreground bg-primary shrink-0">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+            style={{ background: 'var(--gradient-brand)' }}>
             {user?.fullName?.[0]?.toUpperCase() || '?'}
           </div>
           <div className="flex-1 min-w-0">

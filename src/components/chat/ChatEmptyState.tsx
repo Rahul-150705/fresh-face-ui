@@ -25,10 +25,10 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
         <motion.div
           animate={{ rotate: [0, 5, -5, 0] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center bg-primary"
-          style={{ boxShadow: 'var(--shadow-brand)' }}
+          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white"
+          style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
         >
-          <Sparkles className="w-8 h-8 text-primary-foreground" />
+          <Sparkles className="w-8 h-8" />
         </motion.div>
 
         <div>
@@ -46,10 +46,10 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onUploadClick('chat')}
-            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-foreground bg-card border border-border transition-all hover:bg-muted"
-            style={{ boxShadow: 'var(--shadow-sm)' }}
+            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-foreground bg-card border border-border transition-all hover:border-primary/30 hover:bg-primary/5"
+            style={{ boxShadow: 'var(--shadow-card)' }}
           >
-            <MessageSquare className="w-4 h-4" />
+            <MessageSquare className="w-4 h-4 text-primary" />
             Chat with PDF
           </motion.button>
 
@@ -57,8 +57,8 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onUploadClick('summary')}
-            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary transition-all hover:opacity-90"
-            style={{ boxShadow: 'var(--shadow-brand)' }}
+            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+            style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
           >
             <FileText className="w-4 h-4" />
             Summarize PDF
@@ -75,9 +75,9 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground hover:border-primary/20 transition-colors"
               >
-                <f.icon className="w-4 h-4 text-foreground shrink-0" />
+                <f.icon className="w-4 h-4 text-primary shrink-0" />
                 {f.text}
               </motion.div>
             ))}
@@ -87,4 +87,3 @@ export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptySta
     </div>
   );
 }
-

@@ -33,33 +33,34 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
     { icon: Zap, text: 'Instant AI summaries' },
     { icon: BookOpen, text: 'RAG-powered Q&A' },
     { icon: Target, text: 'Auto-generated quizzes' },
-    { icon: Bot, text: 'GPT-4 / Claude / Gemini' },
+    { icon: Bot, text: 'Local AI — your data stays private' },
   ];
 
   return (
     <div className="flex min-h-screen">
-      {/* Left brand panel — black */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12 bg-primary">
+      {/* Left brand panel — gradient */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12"
+        style={{ background: 'var(--gradient-brand)' }}>
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 rounded-full blur-3xl opacity-10 bg-primary-foreground" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-5 bg-primary-foreground" />
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full blur-3xl opacity-20 bg-white" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-10 bg-white" />
         </div>
         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="relative z-10 max-w-md">
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-primary-foreground/10 border border-primary-foreground/20">
-              <GraduationCap className="w-8 h-8 text-primary-foreground" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white/10 border border-white/20">
+              <GraduationCap className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl font-extrabold text-primary-foreground mb-4 leading-tight">
+          <h1 className="text-4xl font-extrabold text-white mb-4 leading-tight">
             AI Teaching<br />Assistant
           </h1>
-          <p className="text-primary-foreground/60 text-lg mb-10 leading-relaxed">
+          <p className="text-white/60 text-lg mb-10 leading-relaxed">
             Transform your lecture PDFs into structured summaries, quizzes, and intelligent Q&A.
           </p>
           <div className="space-y-4">
             {features.map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3 text-primary-foreground/70">
-                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-primary-foreground/10">
+              <div key={text} className="flex items-center gap-3 text-white/70">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/10">
                   <Icon className="w-4 h-4" />
                 </div>
                 <span className="text-sm font-medium">{text}</span>
@@ -69,14 +70,15 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
         </motion.div>
       </div>
 
-      {/* Right form panel — white */}
+      {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary">
-              <GraduationCap className="w-5 h-5 text-primary-foreground" />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--gradient-brand)' }}>
+              <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-xl text-foreground">AI Teaching Assistant</span>
+            <span className="font-bold text-xl text-foreground">LearnAI</span>
           </div>
 
           <button onClick={() => navigate('/')}
@@ -95,7 +97,7 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com"
                   value={form.email} onChange={handleChange} disabled={loading}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-foreground transition-all disabled:opacity-50" />
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50" />
               </div>
             </div>
 
@@ -105,7 +107,7 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••"
                   value={form.password} onChange={handleChange} disabled={loading}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-foreground transition-all disabled:opacity-50" />
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50" />
               </div>
             </div>
 
@@ -117,14 +119,15 @@ export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
             )}
 
             <button type="submit" disabled={loading}
-              className="w-full py-3 rounded-lg font-semibold text-primary-foreground bg-primary transition-all disabled:opacity-50 hover:opacity-90">
+              className="w-full py-3 rounded-lg font-semibold text-white transition-all disabled:opacity-50 hover:opacity-90"
+              style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}>
               {loading ? <><span className="btn-spinner" /> Signing in…</> : 'Sign in →'}
             </button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
             Don't have an account?{' '}
-            <button onClick={onNavigateSignup} className="text-foreground font-semibold hover:underline">Create one free</button>
+            <button onClick={onNavigateSignup} className="text-primary font-semibold hover:underline">Create one free</button>
           </p>
         </motion.div>
       </div>
