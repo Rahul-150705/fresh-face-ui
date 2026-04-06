@@ -4,8 +4,9 @@ import { Menu } from 'lucide-react';
 import { ACTIVE_MODEL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import { useSummaryStream } from '../../hooks/useSummaryStream';
+import { useQaStream } from '../../hooks/useQaStream';
 import {
-  askQuestion, processLectureByMode, getLectureHistory, getLecture,
+  processLectureByMode, getLectureHistory, getLecture,
   type LectureHistoryItem,
 } from '../../services/api';
 import type { ChatMessage } from './ChatMessageBubble';
@@ -25,18 +26,20 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
 
-  // Messages for current conversation
+  // Messages for current conversation (summary/upload messages only)
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isAnswering, setIsAnswering] = useState(false);
 
-  // Current lecture context (for PDF conversations)
+  // Current lecture context
   const [currentLectureId, setCurrentLectureId] = useState<string | null>(null);
   const [currentFileName, setCurrentFileName] = useState('');
 
-  // Streaming hook
+  // Summary streaming hook
   const summaryStream = useSummaryStream(currentLectureId, accessToken);
 
-  // Track current streaming AI message
+  // Q&A streaming hook — replaces the old blocking askQuestion call
+  const qaStream = useQaStream(currentLectureId, accessToken);
+
+  // Track current streaming AI summary message
   const aiMsgIdRef = useRef<string | null>(null);
   const hasAutoTriggeredRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,16 +61,16 @@ export default function ChatPage() {
         createdAt: new Date(item.processedAt),
       }));
       setConversations(prev => {
-        // Merge: keep chat convos, replace lecture convos
         const chatConvs = prev.filter(c => c.type === 'chat');
         return [...chatConvs, ...convs].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
       });
     }).catch(() => { });
   }, [accessToken]);
 
-  // ── Auto-trigger summary stream when lecture is ready ──
+  // Reset auto-trigger guard when lecture changes
   useEffect(() => { hasAutoTriggeredRef.current = false; }, [currentLectureId]);
 
+  // Auto-trigger summary stream once WebSocket connects
   useEffect(() => {
     if (currentLectureId && summaryStream.isConnected && !hasAutoTriggeredRef.current && aiMsgIdRef.current) {
       hasAutoTriggeredRef.current = true;
@@ -75,7 +78,7 @@ export default function ChatPage() {
     }
   }, [currentLectureId, summaryStream.isConnected, summaryStream.triggerStream]);
 
-  // ── Update AI message with summary stream ──
+  // Update AI summary message as chunks arrive
   useEffect(() => {
     if (!aiMsgIdRef.current) return;
     setMessages(prev =>
@@ -113,8 +116,6 @@ export default function ChatPage() {
     }
   }, [summaryStream.error]);
 
-
-
   // ── New Chat ──
   const handleNewChat = useCallback(() => {
     setActiveConvId(null);
@@ -122,22 +123,22 @@ export default function ChatPage() {
     setCurrentLectureId(null);
     setCurrentFileName('');
     aiMsgIdRef.current = null;
-  }, []);
+    qaStream.clearMessages();
+  }, [qaStream]);
 
   // ── Select Conversation ──
   const handleSelectConversation = useCallback(async (conv: Conversation) => {
     setActiveConvId(conv.id);
+    qaStream.clearMessages();
+
     if (conv.lectureId && accessToken) {
-      // Load lecture summary directly into chat messages
       try {
         const lecture = await getLecture(conv.lectureId, accessToken);
         setCurrentLectureId(conv.lectureId);
         setCurrentFileName(lecture.fileName || conv.title);
 
-        // Build chat messages from the lecture data
         const chatMsgs: ChatMessage[] = [];
 
-        // User upload message
         chatMsgs.push({
           id: nextId(),
           role: 'user',
@@ -149,7 +150,6 @@ export default function ChatPage() {
           timestamp: new Date(lecture.processedAt || Date.now()),
         });
 
-        // AI summary message
         const summaryText = lecture.summary
           ? (typeof lecture.summary === 'string'
             ? lecture.summary
@@ -167,7 +167,6 @@ export default function ChatPage() {
 
         setMessages(chatMsgs);
       } catch {
-        // If fetch fails, show error in chat
         setMessages([{
           id: nextId(),
           role: 'assistant',
@@ -178,11 +177,10 @@ export default function ChatPage() {
         }]);
       }
     } else {
-      // Load chat conversation messages (stored in state for now)
       setCurrentLectureId(null);
       setCurrentFileName('');
     }
-  }, [accessToken]);
+  }, [accessToken, qaStream]);
 
   // ── Delete Conversation ──
   const handleDeleteConversation = useCallback((id: string) => {
@@ -190,44 +188,11 @@ export default function ChatPage() {
     if (activeConvId === id) handleNewChat();
   }, [activeConvId, handleNewChat]);
 
-  // ── Send Text Message (only works after PDF upload) ──
-  const handleSendMessage = useCallback(async (text: string) => {
-    if (!accessToken || isAnswering || !currentLectureId) return;
-
-    const userMsg: ChatMessage = {
-      id: nextId(), role: 'user', type: 'text', content: text, timestamp: new Date(),
-    };
-
-    const aiId = nextId();
-    const aiMsg: ChatMessage = {
-      id: aiId, role: 'assistant', type: 'text', content: '', isStreaming: true, timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMsg, aiMsg]);
-
-    // RAG Q&A on the uploaded lecture
-    setIsAnswering(true);
-    try {
-      const res = await askQuestion(currentLectureId, text, accessToken);
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === aiId
-            ? { ...m, content: res.answer, isStreaming: false, sourceChunks: res.sourceChunks, chunksUsed: res.chunksUsed }
-            : m
-        )
-      );
-    } catch (err: any) {
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === aiId
-            ? { ...m, content: err.message || 'Failed to get answer.', type: 'error' as const, isStreaming: false }
-            : m
-        )
-      );
-    } finally {
-      setIsAnswering(false);
-    }
-  }, [accessToken, isAnswering, currentLectureId]);
+  // ── Send Text Message — uses streaming Q&A hook ──
+  const handleSendMessage = useCallback((text: string) => {
+    if (!accessToken || !currentLectureId) return;
+    qaStream.askQuestion(text);
+  }, [accessToken, currentLectureId, qaStream]);
 
   // ── File Upload ──
   const handleFileSelect = useCallback(async (file: File) => {
@@ -244,17 +209,18 @@ export default function ChatPage() {
     aiMsgIdRef.current = mode === 'summary' ? aiId : null;
 
     const aiMsg: ChatMessage = {
-      id: aiId, 
-      role: 'assistant', 
-      type: mode === 'summary' ? 'summary_stream' : 'text', 
-      content: mode === 'summary' ? '' : 'I\'ve successfully processed your PDF! Feel free to ask me any questions about it.',
-      isStreaming: mode === 'summary', 
+      id: aiId,
+      role: 'assistant',
+      type: mode === 'summary' ? 'summary_stream' : 'text',
+      content: mode === 'summary' ? '' : "I've successfully processed your PDF! Feel free to ask me any questions about it.",
+      isStreaming: mode === 'summary',
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMsg, aiMsg]);
+    // Clear previous Q&A messages when a new file is uploaded
+    qaStream.clearMessages();
+    setMessages([userMsg, aiMsg]);
 
-    // Create conversation
     const convId = `lecture-upload-${Date.now()}`;
     const conv: Conversation = {
       id: convId,
@@ -270,12 +236,10 @@ export default function ChatPage() {
       setCurrentLectureId(data.lectureId);
       setCurrentFileName(data.fileName || file.name);
 
-      // Update conversation with lectureId
       setConversations(prev =>
         prev.map(c => c.id === convId ? { ...c, lectureId: data.lectureId } : c)
       );
 
-      // Update user message with page info
       setMessages(prev =>
         prev.map(m =>
           m.id === userMsg.id
@@ -293,9 +257,24 @@ export default function ChatPage() {
       );
       aiMsgIdRef.current = null;
     }
-  }, [accessToken]);
+  }, [accessToken, qaStream]);
+
+  // Merge summary messages + Q&A streaming messages for display
+  const qaMessages: ChatMessage[] = qaStream.messages.map(m => ({
+    id: m.id,
+    role: m.role,
+    type: 'text' as const,
+    content: m.content,
+    isStreaming: m.isStreaming,
+    sourceChunks: m.sourceChunks,
+    chunksUsed: m.chunksUsed,
+    timestamp: m.timestamp,
+  }));
+
+  const allMessages = [...messages, ...qaMessages];
 
   const isCurrentlyStreaming = summaryStream.isStreaming;
+  const isAnswering = qaStream.isStreaming;
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -325,7 +304,7 @@ export default function ChatPage() {
 
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar (mobile toggle + model badge) */}
+        {/* Top bar */}
         <div className="h-12 flex items-center justify-between px-4 border-b border-border/50 shrink-0 bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
@@ -344,7 +323,7 @@ export default function ChatPage() {
         </div>
 
         {/* Messages or empty state */}
-        {messages.length === 0 ? (
+        {allMessages.length === 0 ? (
           <ChatEmptyState
             onUploadClick={(mode) => {
               pendingUploadMode.current = mode;
@@ -354,7 +333,7 @@ export default function ChatPage() {
           />
         ) : (
           <ChatMessages
-            messages={messages}
+            messages={allMessages}
             isStreaming={isCurrentlyStreaming}
             isAnswering={isAnswering}
             streamingContent={summaryStream.summary}

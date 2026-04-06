@@ -7,8 +7,8 @@ import {
 } from 'lucide-react';
 import ChatMessageBubble, { type ChatMessage } from './ChatMessageBubble';
 import ChatInputBar from './ChatInputBar';
-
-import { askQuestion, processLectureByMode } from '../../services/api';
+import { useQaStream } from '../../hooks/useQaStream';
+import { processLectureByMode } from '../../services/api';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -53,13 +53,16 @@ export default function ChatView({
   const scrollRef = useRef<HTMLDivElement>(null);
   const userScrolledUpRef = useRef(false);
 
+  // Summary messages only (file upload bubble + summary stream bubble)
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isAnswering, setIsAnswering] = useState(false);
   const [copied, setCopied] = useState(false);
   const aiMsgIdRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
 
-  // ── Initialize messages on mount ───────────────────────────────────────────
+  // Q&A streaming hook — replaces the old blocking askQuestion call
+  const qaStream = useQaStream(lectureId, accessToken);
+
+  // ── Initialize summary messages on mount ───────────────────────────────────
 
   useEffect(() => {
     if (initializedRef.current) return;
@@ -89,7 +92,7 @@ export default function ChatView({
     setMessages([userMsg, aiMsg]);
   }, []);
 
-  // ── Update AI message as streaming progresses ──────────────────────────────
+  // ── Update summary message as streaming progresses ─────────────────────────
 
   useEffect(() => {
     if (!aiMsgIdRef.current) return;
@@ -119,80 +122,32 @@ export default function ChatView({
   // ── Smart scroll ───────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (scrollRef.current && (isStreaming || isAnswering)) {
+    if (scrollRef.current && (isStreaming || qaStream.isStreaming)) {
       if (!userScrolledUpRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
     }
-  }, [streamingSummary, isStreaming, messages, isAnswering]);
+  }, [streamingSummary, isStreaming, messages, qaStream.isStreaming, qaStream.messages]);
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     userScrolledUpRef.current = !isNearBottom(scrollRef.current);
   }, []);
 
-  // ── Follow-up question handler ─────────────────────────────────────────────
+  // ── Follow-up question handler — uses streaming Q&A hook ──────────────────
 
-  const handleSendMessage = useCallback(async (text: string) => {
-    if (!lectureId || isAnswering) return;
+  const handleSendMessage = useCallback((text: string) => {
+    if (!lectureId || qaStream.isStreaming) return;
+    qaStream.askQuestion(text);
+  }, [lectureId, qaStream]);
 
-    const userMsg: ChatMessage = {
-      id: nextId(),
-      role: 'user',
-      type: 'text',
-      content: text,
-      timestamp: new Date(),
-    };
-
-    const aiId = nextId();
-    const aiMsg: ChatMessage = {
-      id: aiId,
-      role: 'assistant',
-      type: 'text',
-      content: '',
-      isStreaming: true,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMsg, aiMsg]);
-    setIsAnswering(true);
-    userScrolledUpRef.current = false;
-
-    try {
-      const res = await askQuestion(lectureId, text, accessToken);
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === aiId
-            ? {
-              ...m,
-              content: res.answer,
-              isStreaming: false,
-              sourceChunks: res.sourceChunks,
-              chunksUsed: res.chunksUsed,
-            }
-            : m
-        )
-      );
-    } catch (err: any) {
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === aiId
-            ? { ...m, content: err.message || 'Failed to get answer.', type: 'error' as const, isStreaming: false }
-            : m
-        )
-      );
-    } finally {
-      setIsAnswering(false);
-    }
-  }, [lectureId, accessToken, isAnswering]);
-
-  // ── Re-indexing / AI Repair handler ────────────────────────────────────────
+  // ── Re-indexing handler ────────────────────────────────────────────────────
 
   const reindexInputRef = useRef<HTMLInputElement>(null);
 
   const handleReindex = useCallback(async (file: File) => {
-    if (!lectureId || isAnswering) return;
-    
+    if (!lectureId || qaStream.isStreaming) return;
+
     const repairId = nextId();
     setMessages(prev => [...prev, {
       id: repairId,
@@ -200,28 +155,25 @@ export default function ChatView({
       type: 'text',
       content: '🛠️ AI is currently repairing its knowledge base for this PDF...',
       isStreaming: true,
-      timestamp: new Date()
+      timestamp: new Date(),
     }]);
-    setIsAnswering(true);
 
     try {
       await import('../../services/api').then(api => api.reindexLecture(lectureId, file, accessToken));
       setMessages(prev => prev.map(m => m.id === repairId ? {
         ...m,
         content: '✅ AI Brain Repaired! You can now ask questions about this PDF again.',
-        isStreaming: false
+        isStreaming: false,
       } : m));
     } catch (err: any) {
       setMessages(prev => prev.map(m => m.id === repairId ? {
         ...m,
         content: `❌ Repair failed: ${err.message}`,
-        type: 'error',
-        isStreaming: false
+        type: 'error' as const,
+        isStreaming: false,
       } : m));
-    } finally {
-      setIsAnswering(false);
     }
-  }, [lectureId, accessToken, isAnswering]);
+  }, [lectureId, accessToken, qaStream.isStreaming]);
 
   // ── New file upload handler ────────────────────────────────────────────────
 
@@ -271,6 +223,20 @@ export default function ChatView({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // Merge summary messages + Q&A streaming messages
+  const qaMessages: ChatMessage[] = qaStream.messages.map(m => ({
+    id: m.id,
+    role: m.role,
+    type: 'text' as const,
+    content: m.content,
+    isStreaming: m.isStreaming,
+    sourceChunks: m.sourceChunks,
+    chunksUsed: m.chunksUsed,
+    timestamp: m.timestamp,
+  }));
+
+  const allMessages = [...messages, ...qaMessages];
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -351,13 +317,13 @@ export default function ChatView({
         className="flex-1 overflow-y-auto px-4 py-6 space-y-5 relative"
       >
         <AnimatePresence initial={false}>
-          {messages.map(msg => (
+          {allMessages.map(msg => (
             <ChatMessageBubble key={msg.id} message={msg} />
           ))}
         </AnimatePresence>
 
         {/* Typing indicator for Q&A */}
-        {isAnswering && (
+        {qaStream.isStreaming && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -376,7 +342,7 @@ export default function ChatView({
         )}
 
         {/* Post-completion action buttons */}
-        {isComplete && !isAnswering && messages.length <= 3 && (
+        {isComplete && !qaStream.isStreaming && allMessages.length <= 3 && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -405,8 +371,6 @@ export default function ChatView({
             )}
           </motion.div>
         )}
-
-
       </div>
 
       {/* ── Input bar ── */}
@@ -415,7 +379,7 @@ export default function ChatView({
         onFileSelect={handleFileSelect}
         disabled={!isComplete && !isStreaming && !streamError}
         isStreaming={isStreaming}
-        isAnswering={isAnswering}
+        isAnswering={qaStream.isStreaming}
         hasLecture={!!lectureId && isComplete}
       />
     </motion.div>

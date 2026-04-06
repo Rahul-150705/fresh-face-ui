@@ -187,7 +187,7 @@ export function useQaStream(
                 setIsConnected(true);
 
                 client.subscribe(
-                    `/topic/lectures/${lectureId}/qa`,
+                    `/topic/qa/${lectureId}`,
                     (message: IMessage) => {
                         try {
                             const payload: QaStreamPayload = JSON.parse(message.body);
