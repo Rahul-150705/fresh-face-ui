@@ -1,89 +1,116 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Upload, FileText, Brain, MessageSquare } from 'lucide-react';
+import { Upload, FileText, MessageSquare, Brain, Sparkles, ArrowUpRight } from 'lucide-react';
 
 interface ChatEmptyStateProps {
   onUploadClick: (mode: 'chat' | 'summary') => void;
   userName?: string;
 }
 
-const FEATURES = [
-  { icon: FileText, text: 'AI-powered lecture summaries' },
-  { icon: MessageSquare, text: 'Ask questions about your content' },
-  { icon: Brain, text: 'Generate quizzes to test your knowledge' },
+const SUGGESTIONS = [
+  { icon: MessageSquare, label: 'Chat with your PDF', desc: 'Ask questions, get precise answers' },
+  { icon: FileText, label: 'Summarize a lecture', desc: 'Key points, definitions, exam tips' },
+  { icon: Brain, label: 'Generate a quiz', desc: 'Test your understanding instantly' },
 ];
 
 export default function ChatEmptyState({ onUploadClick, userName }: ChatEmptyStateProps) {
+  const greeting = userName ? `Hello, ${userName.split(' ')[0]}` : 'Hello';
+
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4 py-12">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="flex flex-col items-center gap-6 max-w-lg text-center"
-      >
-        {/* Logo */}
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-2xl mx-auto">
+        {/* Greeting */}
         <motion.div
-          animate={{ rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-16 h-16 rounded-2xl flex items-center justify-center text-white"
-          style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-12"
         >
-          <Sparkles className="w-8 h-8" />
+          <h1 className="text-4xl sm:text-5xl font-bold text-foreground tracking-tight mb-3">
+            {greeting}
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Upload a PDF to get started. I'll help you learn smarter.
+          </p>
         </motion.div>
 
-        <div>
-          <h1 className="text-2xl font-extrabold text-foreground">
-            {userName ? `Hi ${userName.split(' ')[0]}, how can I help?` : 'How can I help you learn today?'}
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-            Upload a PDF lecture to get started. I'll generate a summary, and then you can ask questions about it.
-          </p>
-        </div>
-
-        {/* Upload CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onUploadClick('chat')}
-            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-foreground bg-card border border-border transition-all hover:border-primary/30 hover:bg-primary/5"
-            style={{ boxShadow: 'var(--shadow-card)' }}
-          >
-            <MessageSquare className="w-4 h-4 text-primary" />
-            Chat with PDF
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => onUploadClick('summary')}
-            className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
-            style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
-          >
-            <FileText className="w-4 h-4" />
-            Summarize PDF
-          </motion.button>
-        </div>
-
-        {/* Feature list */}
-        <div className="w-full space-y-2 mt-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">What you can do</p>
-          <div className="grid gap-2">
-            {FEATURES.map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card text-sm text-muted-foreground hover:border-primary/20 transition-colors"
-              >
-                <f.icon className="w-4 h-4 text-primary shrink-0" />
-                {f.text}
-              </motion.div>
-            ))}
+        {/* Upload area */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mb-10"
+        >
+          <div className="border-2 border-dashed border-border rounded-2xl p-8 sm:p-10 text-center hover:border-primary/30 transition-colors group cursor-pointer bg-muted/30"
+            onClick={() => onUploadClick('summary')}>
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/15 transition-colors">
+              <Upload className="w-6 h-6 text-primary" />
+            </div>
+            <p className="text-base font-semibold text-foreground mb-1">
+              Drop your PDF here, or click to upload
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Supports lecture notes, textbooks, research papers (up to 10 MB)
+            </p>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+
+        {/* Action buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.25 }}
+          className="grid sm:grid-cols-2 gap-3 mb-10"
+        >
+          <button
+            onClick={() => onUploadClick('chat')}
+            className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/20 transition-all text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+              <MessageSquare className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Chat with PDF</p>
+              <p className="text-xs text-muted-foreground">Interactive Q&A conversation</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+          </button>
+
+          <button
+            onClick={() => onUploadClick('summary')}
+            className="flex items-center gap-4 px-5 py-4 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/20 transition-all text-left group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+              <FileText className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Summarize PDF</p>
+              <p className="text-xs text-muted-foreground">AI-generated structured summary</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+          </button>
+        </motion.div>
+
+        {/* Suggestion chips */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="flex flex-wrap justify-center gap-2"
+        >
+          {SUGGESTIONS.map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 + i * 0.08 }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-border bg-card text-xs text-muted-foreground"
+            >
+              <s.icon className="w-3.5 h-3.5 text-primary" />
+              <span>{s.label}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
     </div>
   );
 }
