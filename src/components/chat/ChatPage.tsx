@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Menu } from 'lucide-react';
+import { Menu, Plus } from 'lucide-react';
 import { ACTIVE_MODEL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
 import { useSummaryStream } from '../../hooks/useSummaryStream';
@@ -26,7 +26,7 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
 
-  // Messages for current conversation (summary/upload messages only)
+  // Messages for current conversation
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   // Current lecture context
@@ -273,21 +273,30 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="h-12 flex items-center justify-between px-4 border-b border-border shrink-0">
+        <div className="h-12 flex items-center justify-between px-4 border-b border-border/60 shrink-0 bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
               <button onClick={() => setSidebarCollapsed(false)}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors lg:hidden">
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <Menu className="w-4 h-4" />
               </button>
             )}
-            <span className="text-sm font-medium text-foreground">
+            <span className="text-sm font-semibold text-foreground">
               {currentFileName || 'New Chat'}
             </span>
           </div>
-          <span className="text-[11px] font-medium text-muted-foreground px-2.5 py-1 rounded-full bg-muted">
-            {ACTIVE_MODEL}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-medium text-muted-foreground px-2.5 py-1 rounded-full bg-muted/60">
+              {ACTIVE_MODEL}
+            </span>
+            <button
+              onClick={handleNewChat}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="New Chat"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {allMessages.length === 0 ? (

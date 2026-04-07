@@ -95,16 +95,17 @@ export default function ChatSidebar({
       initial={{ width: 0, opacity: 0 }}
       animate={{ width: 260, opacity: 1 }}
       exit={{ width: 0, opacity: 0 }}
-      transition={{ duration: 0.2 }}
-      className="h-full flex flex-col border-r border-border bg-muted/30 shrink-0 overflow-hidden"
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+      className="h-full flex flex-col border-r border-border bg-muted/20 shrink-0 overflow-hidden"
     >
       {/* Header */}
       <div className="p-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-foreground text-background flex items-center justify-center">
-            <GraduationCap className="w-4 h-4" />
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+            style={{ background: 'var(--gradient-brand)' }}>
+            <GraduationCap className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-bold text-foreground">LearnAI</span>
+          <span className="text-sm font-bold text-foreground tracking-tight">LearnAI</span>
         </div>
         <button onClick={onToggle}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
@@ -129,7 +130,7 @@ export default function ChatSidebar({
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search…"
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
           />
         </div>
       </div>
@@ -146,10 +147,10 @@ export default function ChatSidebar({
                   onClick={() => onSelectConversation(conv)}
                   onMouseEnter={() => setHoverDeleteId(conv.id)}
                   onMouseLeave={() => setHoverDeleteId(null)}
-                  className={`group flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-sm transition-colors ${
+                  className={`group flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-sm transition-all duration-150 ${
                     activeConversationId === conv.id
                       ? 'bg-muted text-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                   }`}
                 >
                   {conv.type === 'lecture' ? (
@@ -189,7 +190,8 @@ export default function ChatSidebar({
       {/* User */}
       <div className="p-3 border-t border-border shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold shrink-0">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+            style={{ background: 'var(--gradient-brand)' }}>
             {user?.fullName?.[0]?.toUpperCase() || '?'}
           </div>
           <div className="flex-1 min-w-0">

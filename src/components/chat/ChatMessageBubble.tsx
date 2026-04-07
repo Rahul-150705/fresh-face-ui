@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   Sparkles, FileText, ChevronDown, ChevronUp,
-  Copy, Check, Loader2, RotateCcw,
+  Copy, Check, Loader2,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -53,17 +53,17 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   if (isUser) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
         className="flex justify-end gap-2"
       >
         <div className="max-w-[75%] sm:max-w-[65%]">
           {message.type === 'file_upload' ? (
             <div className={`rounded-2xl px-4 py-3 border transition-all ${
-              message.isUploading 
-                ? 'bg-primary/5 border-primary/20 animate-pulse' 
-                : 'bg-muted border-border'
+              message.isUploading
+                ? 'bg-primary/5 border-primary/20 animate-pulse'
+                : 'bg-muted/60 border-border'
             }`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center shrink-0">
@@ -91,11 +91,11 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
               </div>
             </div>
           ) : (
-            <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed">
+            <div className="bg-foreground text-background rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed">
               {message.content}
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground mt-1 text-right px-1">
+          <p className="text-[10px] text-muted-foreground/60 mt-1.5 text-right px-1">
             {formatTime(message.timestamp)}
           </p>
         </div>
@@ -106,25 +106,25 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   // ── AI message ──
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="flex gap-3 items-start"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* AI avatar */}
-      <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center shrink-0 mt-0.5">
-        <Sparkles className="w-4 h-4" />
+      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+        style={{ background: 'var(--gradient-brand)' }}>
+        <Sparkles className="w-4 h-4 text-white" />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 max-w-none">
-        {/* Label */}
-        <p className="text-xs font-semibold text-foreground mb-1.5">LearnAI</p>
+        <p className="text-xs font-bold text-foreground mb-2">LearnAI</p>
 
         {isError ? (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-xl px-4 py-3 text-sm">
+          <div className="bg-destructive/8 border border-destructive/20 text-destructive rounded-xl px-4 py-3 text-sm">
             {message.content}
           </div>
         ) : (
@@ -150,7 +150,7 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
 
         {/* Streaming indicator */}
         {message.isStreaming && message.type === 'summary_stream' && (
-          <div className="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
             <div className="progress-dots">
               <span /><span /><span />
             </div>
@@ -192,20 +192,26 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
 
         {/* Action bar */}
         {message.content && !message.isStreaming && !isError && (
-          <div className={`flex items-center gap-0.5 mt-2 transition-all duration-200 ${hovered ? 'opacity-100' : 'opacity-0'}`}>
+          <motion.div
+            initial={false}
+            animate={{ opacity: hovered ? 1 : 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex items-center gap-1 mt-2"
+          >
             <button
               onClick={handleCopy}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               title="Copy"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
-          </div>
+          </motion.div>
         )}
 
         {/* Timestamp */}
         {!message.isStreaming && (
-          <p className="text-[10px] text-muted-foreground mt-1 px-0.5">
+          <p className="text-[10px] text-muted-foreground/50 mt-1.5 px-0.5">
             {formatTime(message.timestamp)}
           </p>
         )}
