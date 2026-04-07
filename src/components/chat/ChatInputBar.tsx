@@ -24,6 +24,7 @@ export default function ChatInputBar({
   hasLecture,
 }: ChatInputBarProps) {
   const [text, setText] = useState('');
+  const [focused, setFocused] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const placeholder = isStreaming
@@ -60,9 +61,15 @@ export default function ChatInputBar({
   };
 
   return (
-    <div className="shrink-0 pb-4 pt-2 px-4">
+    <div className="shrink-0 pb-5 pt-2 px-4">
       <div className="max-w-3xl mx-auto">
-        <div className="relative flex items-end gap-2 rounded-2xl border border-border bg-card shadow-sm focus-within:border-primary/30 focus-within:shadow-md transition-all">
+        <div
+          className={`relative flex items-end gap-2 rounded-2xl border bg-card transition-all duration-300 ${
+            focused
+              ? 'border-primary/40 shadow-[0_0_0_3px_hsl(var(--primary)/0.08),0_4px_24px_-4px_hsl(var(--primary)/0.12)]'
+              : 'border-border shadow-[0_2px_12px_-2px_rgba(0,0,0,0.08)]'
+          }`}
+        >
           {/* File upload */}
           <input ref={fileRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={handleFileChange} />
           <button
@@ -79,6 +86,8 @@ export default function ChatInputBar({
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             placeholder={placeholder}
             disabled={disabled || isStreaming || isAnswering}
             rows={1}
@@ -95,8 +104,8 @@ export default function ChatInputBar({
           <div className="p-2 shrink-0">
             {showStop ? (
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
                 onClick={onStop}
                 className="w-8 h-8 rounded-lg bg-destructive text-destructive-foreground flex items-center justify-center transition-colors"
                 title="Stop"
@@ -105,15 +114,16 @@ export default function ChatInputBar({
               </motion.button>
             ) : (
               <motion.button
-                whileHover={canSend ? { scale: 1.05 } : {}}
-                whileTap={canSend ? { scale: 0.95 } : {}}
+                whileHover={canSend ? { scale: 1.08 } : {}}
+                whileTap={canSend ? { scale: 0.92 } : {}}
                 onClick={handleSubmit}
                 disabled={!canSend}
-                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${
                   canSend
-                    ? 'bg-foreground text-background hover:opacity-90'
+                    ? 'text-white'
                     : 'bg-muted text-muted-foreground'
                 }`}
+                style={canSend ? { background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' } : undefined}
               >
                 {isAnswering ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -125,7 +135,7 @@ export default function ChatInputBar({
           </div>
         </div>
 
-        <p className="text-[10px] text-muted-foreground text-center mt-2">
+        <p className="text-[10px] text-muted-foreground text-center mt-2.5 opacity-60">
           LearnAI can make mistakes. Verify important information.
         </p>
       </div>
