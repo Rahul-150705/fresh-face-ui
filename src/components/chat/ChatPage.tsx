@@ -203,23 +203,28 @@ export default function ChatPage() {
     const userMsg: ChatMessage = {
       id: nextId(), role: 'user', type: 'file_upload', content: '',
       fileName: file.name, fileSize: file.size, timestamp: new Date(),
+      isUploading: true,
     };
 
     const aiId = nextId();
     aiMsgIdRef.current = mode === 'summary' ? aiId : null;
 
-    const aiMsg: ChatMessage = {
-      id: aiId,
-      role: 'assistant',
-      type: mode === 'summary' ? 'summary_stream' : 'text',
-      content: mode === 'summary' ? '' : "I've successfully processed your PDF! Feel free to ask me any questions about it.",
-      isStreaming: mode === 'summary',
-      timestamp: new Date(),
-    };
-
     // Clear previous Q&A messages when a new file is uploaded
     qaStream.clearMessages();
-    setMessages([userMsg, aiMsg]);
+
+    if (mode === 'summary') {
+      const aiMsg: ChatMessage = {
+        id: aiId,
+        role: 'assistant',
+        type: 'summary_stream',
+        content: '',
+        isStreaming: true,
+        timestamp: new Date(),
+      };
+      setMessages([userMsg, aiMsg]);
+    } else {
+      setMessages([userMsg]);
+    }
 
     const convId = `lecture-upload-${Date.now()}`;
     const conv: Conversation = {
@@ -243,18 +248,35 @@ export default function ChatPage() {
       setMessages(prev =>
         prev.map(m =>
           m.id === userMsg.id
-            ? { ...m, pageCount: data.pageCount }
+            ? { ...m, pageCount: data.pageCount, isUploading: false }
             : m
         )
       );
+
+      if (mode === 'chat') {
+        const successAiMsg: ChatMessage = {
+          id: nextId(),
+          role: 'assistant',
+          type: 'text',
+          content: "I've successfully processed your PDF! Feel free to ask me any questions about it.",
+          isStreaming: false,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, successAiMsg]);
+      }
     } catch (err: any) {
       setMessages(prev =>
-        prev.map(m =>
-          m.id === aiId
-            ? { ...m, content: err.message || 'Upload failed.', type: 'error' as const, isStreaming: false }
-            : m
-        )
+        prev.map(m => m.id === userMsg.id ? { ...m, isUploading: false } : m)
       );
+      const errorMsg: ChatMessage = {
+        id: nextId(),
+        role: 'assistant',
+        type: 'error',
+        content: err.message || 'Upload and indexing failed. Please try again.',
+        isStreaming: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMsg]);
       aiMsgIdRef.current = null;
     }
   }, [accessToken, qaStream]);

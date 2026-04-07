@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   Sparkles, FileText, ChevronDown, ChevronUp,
-  Copy, Check,
+  Copy, Check, Loader2,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -19,6 +19,7 @@ export interface ChatMessage {
   fileSize?: number;
   lectureId?: string;
   isStreaming?: boolean;
+  isUploading?: boolean;
   sourceChunks?: string[];
   chunksUsed?: number;
   timestamp: Date;
@@ -55,16 +56,28 @@ export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
       >
         <div className="max-w-[70%]">
           {message.type === 'file_upload' ? (
-            <div className="bg-muted rounded-2xl px-4 py-3">
-              <div className="flex items-center gap-3">
+            <div className={`bg-muted rounded-2xl px-4 py-3 relative overflow-hidden ${message.isUploading ? 'animate-pulse border border-primary/20 bg-primary/5' : ''}`}>
+              <div className="flex items-center gap-3 relative z-10">
                 <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5 text-foreground" />
+                  {message.isUploading ? (
+                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                  ) : (
+                    <FileText className="w-5 h-5 text-foreground" />
+                  )}
                 </div>
                 <div>
-                  <p className="font-semibold text-sm text-foreground">{message.fileName}</p>
+                  <p className="font-semibold text-sm text-foreground flex items-center gap-2">
+                    {message.fileName}
+                  </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {message.pageCount && `${message.pageCount} pages`}
-                    {message.fileSize && ` · ${(message.fileSize / 1024 / 1024).toFixed(1)} MB`}
+                    {message.isUploading ? (
+                      'Processing and indexing...'
+                    ) : (
+                      <>
+                        {message.pageCount && `${message.pageCount} pages`}
+                        {message.fileSize && ` · ${(message.fileSize / 1024 / 1024).toFixed(1)} MB`}
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
