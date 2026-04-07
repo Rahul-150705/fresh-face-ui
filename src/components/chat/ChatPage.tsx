@@ -36,7 +36,7 @@ export default function ChatPage() {
   // Summary streaming hook
   const summaryStream = useSummaryStream(currentLectureId, accessToken);
 
-  // Q&A streaming hook — replaces the old blocking askQuestion call
+  // Q&A streaming hook
   const qaStream = useQaStream(currentLectureId, accessToken);
 
   // Track current streaming AI summary message
@@ -46,10 +46,9 @@ export default function ChatPage() {
   const currentConvIdRef = useRef<string | null>(null);
   const pendingUploadMode = useRef<'chat' | 'summary'>('chat');
 
-  // Keep ref in sync
   useEffect(() => { currentConvIdRef.current = activeConvId; }, [activeConvId]);
 
-  // Load lecture history as initial conversations
+  // Load lecture history
   useEffect(() => {
     if (!accessToken) return;
     getLectureHistory(accessToken).then(items => {
@@ -67,10 +66,9 @@ export default function ChatPage() {
     }).catch(() => { });
   }, [accessToken]);
 
-  // Reset auto-trigger guard when lecture changes
   useEffect(() => { hasAutoTriggeredRef.current = false; }, [currentLectureId]);
 
-  // Auto-trigger summary stream once WebSocket connects
+  // Auto-trigger summary stream
   useEffect(() => {
     if (currentLectureId && summaryStream.isConnected && !hasAutoTriggeredRef.current && aiMsgIdRef.current) {
       hasAutoTriggeredRef.current = true;
@@ -78,7 +76,7 @@ export default function ChatPage() {
     }
   }, [currentLectureId, summaryStream.isConnected, summaryStream.triggerStream]);
 
-  // Update AI summary message as chunks arrive
+  // Update AI summary message
   useEffect(() => {
     if (!aiMsgIdRef.current) return;
     setMessages(prev =>
@@ -90,7 +88,6 @@ export default function ChatPage() {
     );
   }, [summaryStream.summary, summaryStream.isStreaming]);
 
-  // Handle summary completion
   useEffect(() => {
     if (summaryStream.isComplete && aiMsgIdRef.current) {
       setMessages(prev =>
@@ -103,7 +100,6 @@ export default function ChatPage() {
     }
   }, [summaryStream.isComplete]);
 
-  // Handle summary error
   useEffect(() => {
     if (summaryStream.error && aiMsgIdRef.current) {
       setMessages(prev =>
@@ -116,7 +112,6 @@ export default function ChatPage() {
     }
   }, [summaryStream.error]);
 
-  // ── New Chat ──
   const handleNewChat = useCallback(() => {
     setActiveConvId(null);
     setMessages([]);
@@ -126,7 +121,6 @@ export default function ChatPage() {
     qaStream.clearMessages();
   }, [qaStream]);
 
-  // ── Select Conversation ──
   const handleSelectConversation = useCallback(async (conv: Conversation) => {
     setActiveConvId(conv.id);
     qaStream.clearMessages();
@@ -138,42 +132,29 @@ export default function ChatPage() {
         setCurrentFileName(lecture.fileName || conv.title);
 
         const chatMsgs: ChatMessage[] = [];
-
         chatMsgs.push({
-          id: nextId(),
-          role: 'user',
-          type: 'file_upload',
-          content: '',
-          fileName: lecture.fileName || conv.title,
-          fileSize: 0,
+          id: nextId(), role: 'user', type: 'file_upload', content: '',
+          fileName: lecture.fileName || conv.title, fileSize: 0,
           pageCount: lecture.pageCount,
           timestamp: new Date(lecture.processedAt || Date.now()),
         });
 
         const summaryText = lecture.summary
-          ? (typeof lecture.summary === 'string'
-            ? lecture.summary
-            : JSON.stringify(lecture.summary, null, 2))
+          ? (typeof lecture.summary === 'string' ? lecture.summary : JSON.stringify(lecture.summary, null, 2))
           : 'Summary not available for this lecture.';
 
         chatMsgs.push({
-          id: nextId(),
-          role: 'assistant',
-          type: 'summary_stream',
-          content: summaryText,
-          isStreaming: false,
+          id: nextId(), role: 'assistant', type: 'summary_stream',
+          content: summaryText, isStreaming: false,
           timestamp: new Date(lecture.processedAt || Date.now()),
         });
 
         setMessages(chatMsgs);
       } catch {
         setMessages([{
-          id: nextId(),
-          role: 'assistant',
-          type: 'error',
+          id: nextId(), role: 'assistant', type: 'error',
           content: 'Failed to load lecture summary. Please try again.',
-          isStreaming: false,
-          timestamp: new Date(),
+          isStreaming: false, timestamp: new Date(),
         }]);
       }
     } else {
@@ -182,22 +163,18 @@ export default function ChatPage() {
     }
   }, [accessToken, qaStream]);
 
-  // ── Delete Conversation ──
   const handleDeleteConversation = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
     if (activeConvId === id) handleNewChat();
   }, [activeConvId, handleNewChat]);
 
-  // ── Send Text Message — uses streaming Q&A hook ──
   const handleSendMessage = useCallback((text: string) => {
     if (!accessToken || !currentLectureId) return;
     qaStream.askQuestion(text);
   }, [accessToken, currentLectureId, qaStream]);
 
-  // ── File Upload ──
   const handleFileSelect = useCallback(async (file: File) => {
     if (!accessToken) return;
-
     const mode = pendingUploadMode.current;
 
     const userMsg: ChatMessage = {
@@ -208,18 +185,12 @@ export default function ChatPage() {
 
     const aiId = nextId();
     aiMsgIdRef.current = mode === 'summary' ? aiId : null;
-
-    // Clear previous Q&A messages when a new file is uploaded
     qaStream.clearMessages();
 
     if (mode === 'summary') {
       const aiMsg: ChatMessage = {
-        id: aiId,
-        role: 'assistant',
-        type: 'summary_stream',
-        content: '',
-        isStreaming: true,
-        timestamp: new Date(),
+        id: aiId, role: 'assistant', type: 'summary_stream',
+        content: '', isStreaming: true, timestamp: new Date(),
       };
       setMessages([userMsg, aiMsg]);
     } else {
@@ -227,12 +198,7 @@ export default function ChatPage() {
     }
 
     const convId = `lecture-upload-${Date.now()}`;
-    const conv: Conversation = {
-      id: convId,
-      title: file.name,
-      type: 'lecture',
-      createdAt: new Date(),
-    };
+    const conv: Conversation = { id: convId, title: file.name, type: 'lecture', createdAt: new Date() };
     setConversations(prev => [conv, ...prev]);
     setActiveConvId(convId);
 
@@ -246,61 +212,43 @@ export default function ChatPage() {
       );
 
       setMessages(prev =>
-        prev.map(m =>
-          m.id === userMsg.id
-            ? { ...m, pageCount: data.pageCount, isUploading: false }
-            : m
-        )
+        prev.map(m => m.id === userMsg.id ? { ...m, pageCount: data.pageCount, isUploading: false } : m)
       );
 
       if (mode === 'chat') {
         const successAiMsg: ChatMessage = {
-          id: nextId(),
-          role: 'assistant',
-          type: 'text',
-          content: "I've successfully processed your PDF! Feel free to ask me any questions about it.",
-          isStreaming: false,
-          timestamp: new Date(),
+          id: nextId(), role: 'assistant', type: 'text',
+          content: "I've processed your PDF successfully! Ask me anything about it.",
+          isStreaming: false, timestamp: new Date(),
         };
         setMessages(prev => [...prev, successAiMsg]);
       }
     } catch (err: any) {
-      setMessages(prev =>
-        prev.map(m => m.id === userMsg.id ? { ...m, isUploading: false } : m)
-      );
+      setMessages(prev => prev.map(m => m.id === userMsg.id ? { ...m, isUploading: false } : m));
       const errorMsg: ChatMessage = {
-        id: nextId(),
-        role: 'assistant',
-        type: 'error',
-        content: err.message || 'Upload and indexing failed. Please try again.',
-        isStreaming: false,
-        timestamp: new Date(),
+        id: nextId(), role: 'assistant', type: 'error',
+        content: err.message || 'Upload failed. Please try again.',
+        isStreaming: false, timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMsg]);
       aiMsgIdRef.current = null;
     }
   }, [accessToken, qaStream]);
 
-  // Merge summary messages + Q&A streaming messages for display
+  // Merge messages
   const qaMessages: ChatMessage[] = qaStream.messages.map(m => ({
-    id: m.id,
-    role: m.role,
-    type: 'text' as const,
-    content: m.content,
-    isStreaming: m.isStreaming,
-    sourceChunks: m.sourceChunks,
-    chunksUsed: m.chunksUsed,
+    id: m.id, role: m.role, type: 'text' as const,
+    content: m.content, isStreaming: m.isStreaming,
+    sourceChunks: m.sourceChunks, chunksUsed: m.chunksUsed,
     timestamp: m.timestamp,
   }));
 
   const allMessages = [...messages, ...qaMessages];
-
   const isCurrentlyStreaming = summaryStream.isStreaming;
   const isAnswering = qaStream.isStreaming;
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -313,7 +261,6 @@ export default function ChatPage() {
         }}
       />
 
-      {/* Sidebar */}
       <ChatSidebar
         conversations={conversations}
         activeConversationId={activeConvId}
@@ -324,10 +271,9 @@ export default function ChatPage() {
         onToggle={() => setSidebarCollapsed(v => !v)}
       />
 
-      {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="h-12 flex items-center justify-between px-4 border-b border-border/50 shrink-0 bg-background/80 backdrop-blur-sm">
+        <div className="h-12 flex items-center justify-between px-4 border-b border-border shrink-0">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
               <button onClick={() => setSidebarCollapsed(false)}
@@ -335,7 +281,7 @@ export default function ChatPage() {
                 <Menu className="w-4 h-4" />
               </button>
             )}
-            <span className="text-sm font-semibold text-foreground">
+            <span className="text-sm font-medium text-foreground">
               {currentFileName || 'New Chat'}
             </span>
           </div>
@@ -344,7 +290,6 @@ export default function ChatPage() {
           </span>
         </div>
 
-        {/* Messages or empty state */}
         {allMessages.length === 0 ? (
           <ChatEmptyState
             onUploadClick={(mode) => {
@@ -362,7 +307,6 @@ export default function ChatPage() {
           />
         )}
 
-        {/* Input bar */}
         <ChatInputBar
           onSendMessage={handleSendMessage}
           onFileSelect={(file) => {
