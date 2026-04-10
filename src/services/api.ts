@@ -207,6 +207,25 @@ export async function askQuestion(lectureId: string, question: string, accessTok
   if (!data) throw new Error('Server returned an empty response.');
   return data;
 }
+/**
+ * Triggers streaming Q&A for a lecture question.
+ * Returns 202 ACCEPTED - actual answer streams via WebSocket.
+ * Client must subscribe to /topic/qa/{lectureId} BEFORE calling this.
+ */
+export async function triggerStreamingQA(
+  lectureId: string,
+  question: string,
+  accessToken: string
+): Promise<{ status: string; lectureId: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/ask-stream`, {
+    method: 'POST',
+    headers: jsonHeaders(accessToken),
+    body: JSON.stringify({ question })
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Streaming Q&A failed (${res.status})`);
+  return data;
+}
 
 // ── Quiz ──
 

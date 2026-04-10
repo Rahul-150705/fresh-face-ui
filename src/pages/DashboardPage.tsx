@@ -41,7 +41,7 @@ function StatCard({ icon: Icon, label, value, sub, gradient }: {
     return (
         <motion.div
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-5 flex flex-col gap-3">
+            className="glass-card glass-card-hover transition-all duration-300 p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                     style={gradient
@@ -112,7 +112,7 @@ function LectureCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
             whileHover={{ y: -3 }}
-            className="glass-card overflow-hidden group flex flex-col"
+            className="glass-card glass-card-hover overflow-hidden group flex flex-col transition-all duration-300"
         >
             {/* Color accent bar */}
             <div className="h-1.5 w-full" style={{ background: 'var(--gradient-brand)' }} />
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                                             <motion.div key={i}
                                                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
                                                 transition={{ delay: i * 0.05 }}
-                                                className="glass-card p-4 min-w-[155px] snap-start flex flex-col gap-2 shrink-0">
+                                                className="glass-card glass-card-hover p-4 min-w-[155px] snap-start flex flex-col gap-2 shrink-0 transition-all duration-300">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-2xl font-extrabold"
                                                         style={{ color: gradeColor(q.percentage) }}>
@@ -599,7 +599,7 @@ export default function DashboardPage() {
                                 <div className="lg:col-span-1 space-y-5">
                                     {/* Quick access to recent lectures */}
                                     {history.length > 0 && (
-                                        <div className="glass-card p-5 space-y-4">
+                                        <div className="glass-card glass-card-hover p-5 space-y-4 transition-all duration-300">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <Library className="w-4 h-4 text-primary" />

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, Plus } from 'lucide-react';
 import { ACTIVE_MODEL } from '../../config';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,7 @@ import ChatSidebar, { type Conversation } from './ChatSidebar';
 import ChatMessages from './ChatMessages';
 import ChatInputBar from './ChatInputBar';
 import ChatEmptyState from './ChatEmptyState';
+import { MessageSquare, FileText } from 'lucide-react';
 
 let msgCounter = 0;
 const nextId = () => `msg-${++msgCounter}-${Date.now()}`;
@@ -248,7 +249,7 @@ export default function ChatPage() {
   const isAnswering = qaStream.isStreaming;
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
+    <div className="relative h-screen flex overflow-hidden bg-background">
       <input
         ref={fileInputRef}
         type="file"
@@ -273,60 +274,104 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="h-12 flex items-center justify-between px-4 border-b border-border/60 shrink-0 bg-background/80 backdrop-blur-sm">
+        <div className="h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 bg-transparent">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
               <button onClick={() => setSidebarCollapsed(false)}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <Menu className="w-4 h-4" />
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-colors">
+                <Menu className="w-5 h-5" />
               </button>
             )}
-            <span className="text-sm font-semibold text-foreground">
-              {currentFileName || 'New Chat'}
+            <span className="text-[15px] font-medium text-foreground">
+              {currentFileName || 'LearnAI Assistant'}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-medium text-muted-foreground px-2.5 py-1 rounded-full bg-muted/60">
-              {ACTIVE_MODEL}
-            </span>
             <button
               onClick={handleNewChat}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
               title="New Chat"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {allMessages.length === 0 ? (
-          <ChatEmptyState
-            onUploadClick={(mode) => {
-              pendingUploadMode.current = mode;
-              fileInputRef.current?.click();
-            }}
-            userName={user?.fullName}
-          />
-        ) : (
-          <ChatMessages
-            messages={allMessages}
-            isStreaming={isCurrentlyStreaming}
-            isAnswering={isAnswering}
-            streamingContent={summaryStream.summary}
-          />
-        )}
+          <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto w-full relative z-10">
+            <div className="w-full max-w-3xl flex flex-col items-center justify-center -mt-16">
+              <ChatEmptyState userName={user?.fullName} />
+              
+              <div className="w-full max-w-3xl px-0 mt-8">
+                <ChatInputBar
+                  onSendMessage={handleSendMessage}
+                  onFileSelect={(file) => {
+                    pendingUploadMode.current = 'chat';
+                    handleFileSelect(file);
+                  }}
+                  onStop={() => {
+                    if (isCurrentlyStreaming) summaryStream.stopStream();
+                    if (isAnswering) qaStream.stopStream();
+                  }}
+                  disabled={!currentLectureId}
+                  isStreaming={isCurrentlyStreaming}
+                  isAnswering={isAnswering}
+                  hasLecture={!!currentLectureId}
+                />
 
-        <ChatInputBar
-          onSendMessage={handleSendMessage}
-          onFileSelect={(file) => {
-            pendingUploadMode.current = 'chat';
-            handleFileSelect(file);
-          }}
-          disabled={!currentLectureId || (pendingUploadMode.current === 'summary' && !summaryStream.isComplete && !summaryStream.summary)}
-          isStreaming={isCurrentlyStreaming}
-          isAnswering={isAnswering}
-          hasLecture={!!currentLectureId && (pendingUploadMode.current === 'chat' || summaryStream.isComplete || !!summaryStream.summary)}
-        />
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.4 }}
+                  className="flex flex-wrap justify-center gap-3 mt-6"
+                >
+                  {[
+                    { mode: 'chat' as const, icon: MessageSquare, title: 'Chat with PDF' },
+                    { mode: 'summary' as const, icon: FileText, title: 'Summarize PDF' },
+                  ].map((item) => (
+                    <button
+                      key={item.mode}
+                      onClick={() => {
+                        pendingUploadMode.current = item.mode;
+                        fileInputRef.current?.click();
+                      }}
+                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-card hover:bg-[#333537] border border-transparent transition-all"
+                    >
+                      <item.icon className="w-4 h-4 text-[#a8c7fa]" />
+                      <span className="text-sm font-medium text-[#e3e3e3]">{item.title}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <ChatMessages
+              messages={allMessages}
+              isStreaming={isCurrentlyStreaming}
+              isAnswering={isAnswering}
+              streamingContent={summaryStream.summary}
+            />
+            <div className="bg-background pt-2 pb-4 z-10 w-full max-w-4xl mx-auto px-4">
+              <ChatInputBar
+                onSendMessage={handleSendMessage}
+                onFileSelect={(file) => {
+                  pendingUploadMode.current = 'chat';
+                  handleFileSelect(file);
+                }}
+                onStop={() => {
+                  if (isCurrentlyStreaming) summaryStream.stopStream();
+                  if (isAnswering) qaStream.stopStream();
+                }}
+                disabled={!currentLectureId || (pendingUploadMode.current === 'summary' && !summaryStream.isComplete && !summaryStream.summary)}
+                isStreaming={isCurrentlyStreaming}
+                isAnswering={isAnswering}
+                hasLecture={!!currentLectureId && (pendingUploadMode.current === 'chat' || summaryStream.isComplete || !!summaryStream.summary)}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

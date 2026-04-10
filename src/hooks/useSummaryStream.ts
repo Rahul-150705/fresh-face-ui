@@ -28,6 +28,8 @@ export interface UseSummaryStreamReturn {
     error: string | null;
     /** Call this to trigger the streaming summarization via REST. */
     triggerStream: () => Promise<void>;
+    /** Call this to halt the streaming instantly. */
+    stopStream: () => void;
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────────
@@ -266,6 +268,14 @@ export function useSummaryStream(
 
 
 
+    const stopStream = useCallback(() => {
+        flushDrip();
+        wordQueueRef.current = [];
+        pendingCompleteRef.current = null;
+        triggerInFlightRef.current = false;
+        setIsStreaming(false);
+        setIsComplete(true);
+    }, [flushDrip]);
 
-    return { summary, isStreaming, isComplete, isConnected, error, triggerStream };
+    return { summary, isStreaming, isComplete, isConnected, error, triggerStream, stopStream };
 }

@@ -231,6 +231,7 @@ export default function ChatView({
     type: 'text' as const,
     content: m.content,
     isStreaming: m.isStreaming,
+    isCached: m.isCached,
     sourceChunks: m.sourceChunks,
     chunksUsed: m.chunksUsed,
     timestamp: m.timestamp,

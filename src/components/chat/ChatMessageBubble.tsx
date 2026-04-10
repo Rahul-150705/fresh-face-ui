@@ -1,25 +1,22 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
-  Sparkles, FileText, ChevronDown, ChevronUp,
-  Copy, Check, Loader2,
+  FileText, ChevronDown, ChevronUp,
+  Copy, Check, Loader2, Bot, Zap
 } from 'lucide-react';
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system';
-  type: 'file_upload' | 'text' | 'summary_stream' | 'error';
+  role: 'user' | 'assistant';
+  type: 'text' | 'file_upload' | 'summary_stream' | 'error';
   content: string;
-  fileName?: string;
-  pageCount?: number;
-  fileSize?: number;
-  lectureId?: string;
   isStreaming?: boolean;
+  isCached?: boolean;
   isUploading?: boolean;
+  fileName?: string;
+  fileSize?: number;
+  pageCount?: number;
   sourceChunks?: string[];
   chunksUsed?: number;
   timestamp: Date;
@@ -29,193 +26,160 @@ interface ChatMessageBubbleProps {
   message: ChatMessage;
 }
 
-function formatTime(d: Date) {
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-// ── Component ────────────────────────────────────────────────────────────────
+const formatSize = (bytes: number) => {
+  const mb = bytes / (1024 * 1024);
+  return mb < 1 ? '<1 MB' : `${mb.toFixed(1)} MB`;
+};
 
 export default function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
-  const [showChunks, setShowChunks] = useState(false);
+  const [showSources, setShowSources] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [hovered, setHovered] = useState(false);
 
-  const isUser = message.role === 'user';
-  const isError = message.type === 'error';
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // ── User message ──
-  if (isUser) {
+  const isUser = message.role === 'user';
+
+  // ----------------------------------------------------
+  // USER: FILE UPLOAD
+  // ----------------------------------------------------
+  if (message.type === 'file_upload') {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="flex justify-end gap-2"
-      >
-        <div className="max-w-[75%] sm:max-w-[65%]">
-          {message.type === 'file_upload' ? (
-            <div className={`rounded-2xl px-4 py-3 border transition-all ${
-              message.isUploading
-                ? 'bg-primary/5 border-primary/20 animate-pulse'
-                : 'bg-muted/60 border-border'
-            }`}>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-background border border-border flex items-center justify-center shrink-0">
-                  {message.isUploading ? (
-                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                  ) : (
-                    <FileText className="w-5 h-5 text-primary" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-medium text-sm text-foreground truncate">
-                    {message.fileName}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {message.isUploading ? (
-                      'Processing…'
-                    ) : (
-                      <>
-                        {message.pageCount && `${message.pageCount} pages`}
-                        {message.fileSize && ` · ${(message.fileSize / 1024 / 1024).toFixed(1)} MB`}
-                      </>
-                    )}
-                  </p>
-                </div>
+      <div className="w-full flex justify-end mb-6">
+        <div className="max-w-[85%] md:max-w-[70%]">
+          <div className="bg-[#1e1f20] border border-[#333537] rounded-3xl p-4 flex gap-4 items-center">
+            <div className="w-12 h-12 rounded-xl bg-[#282a2c] flex items-center justify-center shrink-0">
+              <FileText className="w-6 h-6 text-[#a8c7fa]" />
+            </div>
+            <div className="min-w-0 pr-4">
+              <p className="text-[15px] font-medium text-[#e3e3e3] truncate">
+                {message.fileName}
+              </p>
+              <div className="flex items-center gap-2 mt-1 text-[13px] text-[#c4c7c5]">
+                {message.isUploading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing PDF...</span>
+                  </>
+                ) : (
+                  <span>
+                    {message.fileSize ? formatSize(message.fileSize) : 'PDF Document'}
+                    {message.pageCount && ` • ${message.pageCount} pages`}
+                  </span>
+                )}
               </div>
             </div>
-          ) : (
-            <div className="bg-foreground text-background rounded-2xl rounded-br-md px-4 py-2.5 text-sm leading-relaxed">
-              {message.content}
-            </div>
-          )}
-          <p className="text-[10px] text-muted-foreground/60 mt-1.5 text-right px-1">
-            {formatTime(message.timestamp)}
-          </p>
+          </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
-  // ── AI message ──
+  // ----------------------------------------------------
+  // AI: ERROR
+  // ----------------------------------------------------
+  if (message.type === 'error') {
+    return (
+      <div className="w-full flex justify-start mb-6">
+        <div className="max-w-[85%] md:max-w-[75%] flex gap-4">
+          <div className="w-8 h-8 rounded-full bg-[#1e1f20] flex items-center justify-center shrink-0 mt-1">
+            <Bot className="w-5 h-5 text-[#ff8f8f]" />
+          </div>
+          <div className="bg-[#5a1e1e] text-[#ffb4b4] rounded-2xl px-5 py-3">
+            <p className="text-[15px]">{message.content}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ----------------------------------------------------
+  // NORMAL MESSAGES
+  // ----------------------------------------------------
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="flex gap-3 items-start"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* AI avatar */}
-      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-        style={{ background: 'var(--gradient-brand)' }}>
-        <Sparkles className="w-4 h-4 text-white" />
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0 max-w-none">
-        <p className="text-xs font-bold text-foreground mb-2">LearnAI</p>
-
-        {isError ? (
-          <div className="bg-destructive/8 border border-destructive/20 text-destructive rounded-xl px-4 py-3 text-sm">
-            {message.content}
+    <div className={`w-full flex mb-6 ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div className={`max-w-[85%] md:max-w-[75%] flex ${isUser ? 'flex-row-reverse' : 'gap-4'}`}>
+        
+        {/* Gemini-style AI Avatar */}
+        {!isUser && (
+          <div className="w-8 h-8 flex-shrink-0 mt-1">
+             <div className="w-full h-full rounded-full flex items-center justify-center border border-[#333537] bg-opacity-20">
+               <Bot className="w-5 h-5 text-[#a8c7fa]" />
+             </div>
           </div>
-        ) : (
-          <>
-            {message.content && (
-              <div className="prose-chat">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {message.content}
-                </ReactMarkdown>
+        )}
+
+        {/* Bubble / Content Container */}
+        <div className={`
+          ${isUser 
+            ? 'bg-[#1e1f20] text-[#e3e3e3] rounded-[24px] rounded-tr-sm px-5 py-3'
+            : 'text-[#e3e3e3] py-1' // AI text has no background in Gemini style
+          }
+        `}>
+          
+          {/* Cache Badge */}
+          {message.isCached && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full border border-yellow-500/20 bg-yellow-500/10 text-yellow-500 text-[11px] font-semibold tracking-wide uppercase">
+                 <Zap className="w-3.5 h-3.5" />
+                 Instant Answer
               </div>
-            )}
+          )}
 
-            {/* Streaming cursor */}
+          <div className="prose-chat w-full break-words">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+
+            {/* Blinking Cursor for Streaming */}
             {message.isStreaming && (
-              <motion.span
-                className="inline-block w-0.5 h-4 bg-primary ml-0.5 align-middle rounded-full"
-                animate={{ opacity: [1, 0, 1] }}
-                transition={{ repeat: Infinity, duration: 0.8 }}
-              />
+              <span className="inline-block w-1.5 h-4 bg-[#c4c7c5] max-h-full -mb-0.5 ml-1 animate-[pulse_1s_ease-in-out_infinite]" />
             )}
-          </>
-        )}
+          </div>
 
-        {/* Streaming indicator */}
-        {message.isStreaming && message.type === 'summary_stream' && (
-          <div className="flex items-center gap-2 mt-3 text-[11px] text-muted-foreground">
-            <div className="progress-dots">
-              <span /><span /><span />
+          {/* AI Message Footer Tools (Sources, Copy) */}
+          {!isUser && !message.isStreaming && (
+             <div className="flex items-center gap-3 mt-4 text-[#c4c7c5]">
+               <button
+                  onClick={handleCopy}
+                  className="flex items-center gap-1.5 text-[13px] hover:text-[#e3e3e3] transition-colors"
+                  title="Copy to clipboard"
+               >
+                 {copied ? <Check className="w-4 h-4 text-[#a8c7fa]" /> : <Copy className="w-4 h-4" />}
+               </button>
+
+               {/* Source chunks dropdown */}
+               {message.sourceChunks && message.sourceChunks.length > 0 && (
+                 <button
+                   onClick={() => setShowSources(!showSources)}
+                   className="flex items-center gap-1.5 text-[13px] hover:text-[#e3e3e3] transition-colors ml-2"
+                 >
+                   <span>{message.sourceChunks.length} sources</span>
+                   {showSources ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                 </button>
+               )}
+             </div>
+          )}
+
+          {/* Source Chunks Expansion */}
+          {!isUser && showSources && message.sourceChunks && message.sourceChunks.length > 0 && (
+            <div className="mt-3 pt-3 space-y-3">
+              <p className="text-[12px] font-medium text-[#c4c7c5] uppercase tracking-wide">
+                Grounding Sources
+              </p>
+              {message.sourceChunks.map((chunk, i) => (
+                <div key={i} className="bg-[#1e1f20] rounded-xl p-3 text-[13px] border border-[#333537] text-[#e3e3e3]">
+                   <p className="leading-relaxed break-words">{chunk}</p>
+                </div>
+              ))}
             </div>
-            <span>{message.content.length.toLocaleString()} chars</span>
-          </div>
-        )}
+          )}
 
-        {/* Source chunks */}
-        {message.sourceChunks && message.sourceChunks.length > 0 && !message.isStreaming && (
-          <div className="mt-3">
-            <button
-              onClick={() => setShowChunks(!showChunks)}
-              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors py-1"
-            >
-              {showChunks ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              Sources
-              {message.chunksUsed && (
-                <span className="px-1.5 py-0.5 rounded-full bg-muted text-[10px] font-semibold">
-                  {message.chunksUsed}
-                </span>
-              )}
-            </button>
-            {showChunks && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mt-2 space-y-2"
-              >
-                {message.sourceChunks.map((chunk, i) => (
-                  <div key={i} className="text-xs text-muted-foreground bg-muted/50 border border-border rounded-lg p-3 leading-relaxed">
-                    <span className="text-[10px] font-bold text-foreground/50 mr-1.5">#{i + 1}</span>
-                    {chunk}
-                  </div>
-                ))}
-              </motion.div>
-            )}
-          </div>
-        )}
+        </div>
 
-        {/* Action bar */}
-        {message.content && !message.isStreaming && !isError && (
-          <motion.div
-            initial={false}
-            animate={{ opacity: hovered ? 1 : 0 }}
-            transition={{ duration: 0.15 }}
-            className="flex items-center gap-1 mt-2"
-          >
-            <button
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Copy"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied' : 'Copy'}</span>
-            </button>
-          </motion.div>
-        )}
-
-        {/* Timestamp */}
-        {!message.isStreaming && (
-          <p className="text-[10px] text-muted-foreground/50 mt-1.5 px-0.5">
-            {formatTime(message.timestamp)}
-          </p>
-        )}
       </div>
-    </motion.div>
+    </div>
   );
 }

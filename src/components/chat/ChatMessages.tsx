@@ -40,38 +40,16 @@ export default function ChatMessages({ messages, isStreaming, isAnswering, strea
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className="flex-1 overflow-y-auto py-8 scroll-smooth"
+      className="flex-1 overflow-y-auto py-8 scroll-smooth z-10 relative"
     >
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-7">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-7">
         <AnimatePresence initial={false}>
           {messages.map(msg => (
             <ChatMessageBubble key={msg.id} message={msg} />
           ))}
         </AnimatePresence>
 
-        {/* Typing indicator */}
-        {isAnswering && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="flex items-start gap-3"
-          >
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: 'var(--gradient-brand)' }}>
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-foreground mb-2">LearnAI</p>
-              <div className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-muted/60 border border-border">
-                <div className="progress-dots">
-                  <span /><span /><span />
-                </div>
-                <span className="text-xs text-muted-foreground ml-1">Thinking…</span>
-              </div>
-            </div>
-          </motion.div>
-        )}
+        {/* The streaming message is already mapped natively in messages alongside previous history, with no need for a duplicate hard-coded thinking box. */}
       </div>
     </div>
   );

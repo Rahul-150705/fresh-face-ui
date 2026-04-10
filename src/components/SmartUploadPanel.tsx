@@ -91,7 +91,7 @@ export default function SmartUploadPanel({ accessToken, onSummaryReady, onLoadin
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="glass-card overflow-hidden">
+        <div className="glass-card glass-card-hover overflow-hidden transition-all duration-300">
             {/* Header */}
             <div className="px-6 py-4 border-b border-border/50 flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"

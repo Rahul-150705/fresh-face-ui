@@ -26,6 +26,7 @@ export interface QaStreamMessage {
     timestamp: Date;
     /** True while tokens are still arriving for this message bubble. */
     isStreaming?: boolean;
+    isCached?: boolean;
 }
 
 export interface UseQaStreamReturn {
@@ -35,6 +36,7 @@ export interface UseQaStreamReturn {
     error: string | null;
     askQuestion: (question: string) => Promise<void>;
     clearMessages: () => void;
+    stopStream: () => void;
 }
 
 // ── Drip speed — identical to useSummaryStream ────────────────────────────────
@@ -195,8 +197,24 @@ export function useQaStream(
                             switch (payload.type) {
 
                                 case 'ANSWER_CHUNK': {
-                                    const chunk = payload.chunk ?? '';
+                                    let chunk = payload.chunk ?? '';
                                     if (!chunk) break;
+
+                                    // Intercept FAQ Cache flag
+                                    const cacheFlag = '*⚡ Served from FAQ Cache*\n\n';
+                                    const cacheFlagFallback = '*⚡ Served from FAQ Cache*';
+                                    if (chunk.includes(cacheFlag) || chunk.includes(cacheFlagFallback)) {
+                                        chunk = chunk.replace(cacheFlag, '').replace(cacheFlagFallback, '');
+                                        if (currentAssistantIdRef.current) {
+                                            setMessages(prev =>
+                                                prev.map(m =>
+                                                    m.id === currentAssistantIdRef.current
+                                                        ? { ...m, isCached: true }
+                                                        : m
+                                                )
+                                            );
+                                        }
+                                    }
 
                                     // Split into word-level tokens preserving whitespace —
                                     // identical to useSummaryStream's split strategy
@@ -354,5 +372,20 @@ export function useQaStream(
         setError(null);
     }, [flushDrip]);
 
-    return { messages, isStreaming, isConnected, error, askQuestion, clearMessages };
+    // ── 4. Stop streaming ─────────────────────────────────────────────────────
+    
+    const stopStream = useCallback(() => {
+        flushDrip();
+        wordQueueRef.current = [];
+        pendingCompleteRef.current = null;
+        
+        // Disconnecting currentAssistantIdRef ensures any late-arriving chunks from the server
+        // are ignored in the pipeline
+        currentAssistantIdRef.current = null;
+        
+        inFlightRef.current = false;
+        setIsStreaming(false);
+    }, [flushDrip]);
+
+    return { messages, isStreaming, isConnected, error, askQuestion, clearMessages, stopStream };
 }
