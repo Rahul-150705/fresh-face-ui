@@ -98,7 +98,7 @@ export default function ChatInputBar({
     <div className="shrink-0 pb-6 w-full">
       <div className="w-full relative">
         <div
-           className={`relative flex items-end gap-2 rounded-3xl transition-all duration-300 bg-[#1e1f20] border ${focused ? 'border-[#444746] bg-[#282a2c] shadow-[0_0_15px_rgba(0,0,0,0.5)]' : 'border-transparent'}`}
+           className={`relative flex items-end gap-2 rounded-2xl transition-all duration-300 bg-[#171411] border ${focused ? 'border-[#f5a623]/60 bg-[#201b15] shadow-[0_0_25px_rgba(245,166,35,0.12)]' : 'border-[#302b24]'}`}
            style={{ minHeight: '56px' }}
         >
           {/* File upload */}
@@ -153,8 +153,8 @@ export default function ChatInputBar({
                 disabled={!canSend}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 ${
                   canSend 
-                    ? 'bg-[#e3e3e3] text-[#131314] hover:bg-white' 
-                    : 'bg-[#1e1f20] text-[#444746]'
+                    ? 'bg-[#f5a623] text-[#09080a] hover:bg-[#ffb83d]' 
+                    : 'bg-[#302b24] text-[#665d55]'
                 }`}
               >
                 {isAnswering ? (

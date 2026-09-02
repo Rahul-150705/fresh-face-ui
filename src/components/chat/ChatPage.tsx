@@ -274,11 +274,11 @@ export default function ChatPage() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <div className="h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 bg-transparent">
+        <div className="h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 z-10 bg-[#09080A]/80 backdrop-blur-xl border-b border-[#302b24]">
           <div className="flex items-center gap-3">
             {sidebarCollapsed && (
               <button onClick={() => setSidebarCollapsed(false)}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-colors">
+                className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-[#302b24] transition-colors">
                 <Menu className="w-5 h-5" />
               </button>
             )}
@@ -289,7 +289,7 @@ export default function ChatPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleNewChat}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
+              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-[#302b24] transition-colors"
               title="New Chat"
             >
               <Plus className="w-5 h-5" />
@@ -335,10 +335,10 @@ export default function ChatPage() {
                         pendingUploadMode.current = item.mode;
                         fileInputRef.current?.click();
                       }}
-                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-card hover:bg-[#333537] border border-transparent transition-all"
+                      className="group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#171411] hover:bg-[#302b24] border border-[#302b24] hover:border-[#f5a623]/40 transition-all"
                     >
-                      <item.icon className="w-4 h-4 text-[#a8c7fa]" />
-                      <span className="text-sm font-medium text-[#e3e3e3]">{item.title}</span>
+                      <item.icon className="w-4 h-4 text-[#f5a623]" />
+                      <span className="text-sm font-medium text-[#f5f0e8]">{item.title}</span>
                     </button>
                   ))}
                 </motion.div>

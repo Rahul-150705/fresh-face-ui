@@ -4,36 +4,36 @@
 
 @layer base {
   :root {
-    /* Hardcode the dark theme as default */
-    --background: 247 34% 5%; /* Very deep purple/black */
-    --foreground: 210 40% 98%;
+    /* Warm editorial dark theme inspired by the renewed product UI */
+    --background: 20 14% 4%;
+    --foreground: 40 25% 95%;
 
-    --card: 247 34% 8%; /* Slightly lighter deep purple for cards */
-    --card-foreground: 210 40% 98%;
+    --card: 20 12% 7%;
+    --card-foreground: 40 25% 95%;
 
-    --popover: 247 34% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 20 12% 8%;
+    --popover-foreground: 40 25% 95%;
 
-    --primary: 243 75% 65%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 38 92% 52%;
+    --primary-foreground: 20 14% 4%;
 
-    --secondary: 247 34% 12%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 20 8% 12%;
+    --secondary-foreground: 40 15% 75%;
 
-    --muted: 247 34% 10%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 20 8% 12%;
+    --muted-foreground: 210 8% 55%;
 
-    --accent: 243 75% 75%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 38 92% 52%;
+    --accent-foreground: 20 14% 4%;
 
     --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 247 34% 15%;
-    --input: 247 34% 15%;
-    --ring: 243 75% 65%;
+    --border: 20 8% 16%;
+    --input: 20 8% 10%;
+    --ring: 38 92% 52%;
 
-    --radius: 1rem;
+    --radius: 0.5rem;
 
     --gradient-hero-bg: radial-gradient(circle at 50% -20%, #4f46e5 0%, #13112b 40%, #000000 100%);
     --gradient-primary: linear-gradient(135deg, #1e1b4b, #4f46e5);
@@ -46,14 +46,14 @@
     --shadow-accent: 0 4px 20px -4px rgba(34, 211, 238, 0.4);
     --shadow-glass: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px 0 rgba(0,0,0,0.5);
 
-    --sidebar-background: 247 34% 6%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 175 75% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 247 34% 15%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 247 34% 15%;
-    --sidebar-ring: 243 75% 65%;
+    --sidebar-background: 20 12% 7%;
+    --sidebar-foreground: 40 25% 95%;
+    --sidebar-primary: 38 92% 52%;
+    --sidebar-primary-foreground: 20 14% 4%;
+    --sidebar-accent: 20 8% 14%;
+    --sidebar-accent-foreground: 40 25% 95%;
+    --sidebar-border: 20 8% 16%;
+    --sidebar-ring: 38 92% 52%;
   }
 
   .dark {
@@ -70,7 +70,7 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
     color-scheme: dark;
-    background: #000000;
+    background: #09080A;
   }
 
   /* Smooth panning background effect */
