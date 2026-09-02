@@ -1,166 +1,270 @@
-import axios from 'axios';
+import { BASE_URL } from '../config';
 
-// Base API URL — uses env var in production, falls back to localhost for dev
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// Using centralized BASE_URL from config.ts
+// const BASE_URL = 'https://ai-summary-91ww.onrender.com';
 
-// Create axios instance
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text || text.trim() === '') return null;
+  try { return JSON.parse(text); } catch { return { error: text }; }
+}
 
-// Request interceptor to add JWT token
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+function authHeaders(token: string): Record<string, string> {
+  return { 'Authorization': `Bearer ${token}` };
+}
 
-// Response interceptor to handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+function jsonHeaders(token: string): Record<string, string> {
+  return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
 
-// Auth API
-export const authAPI = {
-  login: (credentials: { username: string; password: string }) => 
-    api.post('/auth/login', credentials),
-  signup: (userData: { username: string; password: string; fullName: string; email: string }) =>
-    api.post('/auth/signup', userData),
-  health: () => api.get('/auth/health'),
-};
+// ── Stats & Quiz History ──
 
-export const policyAPI = {
-  createPolicyWithClient: (policyData: {
-    clientFullName: string;
-    clientEmail: string;
-    clientPhoneNumber: string;
-    clientWhatsappNumber?: string;
-    clientAddress?: string;
-    policyNumber: string;
-    policyType: string;
-    vehicleType?: string;
-    registrationNumber?: string;
-    insurerName?: string;
-    startDate: string;
-    expiryDate: string;
-    premium: number;
-    premiumFrequency: string;
-    policyDescription?: string;
-  }) => api.post('/policies/create', policyData),
-  
-  getAllMyPolicies: () => api.get('/policies'),
-  
-  getPolicyById: (id: number) => api.get(`/policies/${id}`),
-  
-  updatePolicyStatus: (id: number, status: string) => 
-    api.put(`/policies/${id}/status`, { status }),
-  
-  deletePolicy: (id: number) => api.delete(`/policies/${id}`),
+export interface UserStats {
+  totalLectures: number;
+  totalPagesProcessed: number;
+  totalQuizAttempts: number;
+  averageQuizScore: number;
+  studyDaysThisMonth: number;
+  recentQuizzes: { lectureFileName: string; percentage: number; grade: string; attemptedAt: string }[];
+}
 
-  // Manual renewal - mark policy as contacted manually by agent
-  markAsManuallyRenewed: (id: number, notes: string, renewed: boolean) =>
-    api.post(`/policies/${id}/manual-renew`, { notes, renewed }),
-  
-  // Confirm renewal - create new policy and delete old one
-  confirmRenewal: (id: number, renewalData: {
-    newStartDate: string;
-    newExpiryDate: string;
-    newPremium?: number;
-    notes?: string;
-    contactMethod?: string;
-  }) => api.post(`/policies/${id}/confirm-renewal`, renewalData),
-  
-  extractFromPdf: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+export async function getUserStats(accessToken: string): Promise<UserStats> {
+  const res = await fetch(`${BASE_URL}/api/lecture/stats`, { headers: authHeaders(accessToken) });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Stats failed (${res.status})`);
+  return data;
+}
 
-    return api.post('/policies/extract-from-pdf', formData, {
-      headers: {
-        'Content-Type': undefined,
-      },
-    });
-  },
+export async function getQuizHistory(accessToken: string) {
+  const res = await fetch(`${BASE_URL}/api/quiz/history`, { headers: authHeaders(accessToken) });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Quiz history failed (${res.status})`);
+  return data || [];
+}
 
-  // Attach / replace the stored PDF document for a policy (saved to S3, agent-scoped)
-  uploadPolicyPdf: (id: number, file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
+// ── Lecture endpoints ──
 
-    return api.post(`/policies/${id}/pdf`, formData, {
-      headers: {
-        'Content-Type': undefined,
-      },
-    });
-  },
+export async function uploadLectureForSummary(file: File, accessToken: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/lecture/summarize`, { method: 'POST', headers: authHeaders(accessToken), body: formData });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
 
-  // Fetch presigned URL to view stored policy PDF
-  viewPolicyPdf: (id: number) => api.get(`/policies/${id}/pdf`),
-};
+export type ProcessMode = 'summary' | 'chat' | 'quiz';
 
-// Client API
-export const clientAPI = {
-  getMyClients: () => api.get('/clients'),
-  
-  getClientById: (id: string) => api.get(`/clients/${id}`),
-  
-  createClient: (clientData: {
-    fullName: string;
-    email: string;
-    phoneNumber: string;
-    address?: string;
-  }) => api.post('/clients', clientData),
-};
+export interface ProcessResponse {
+  lectureId: string;
+  mode: ProcessMode;
+  /** "complete" for summary mode; "indexing_complete" for chat/quiz (async summary running) */
+  status: 'complete' | 'indexing_complete';
+  fileName: string;
+  pageCount: number;
+  chunksIndexed: number;
+  /** Only present when mode="summary" — full nested summary data */
+  summary?: any;
+}
 
-export const messagesAPI = {
-  getAllLogs: () => api.get('/messages/logs'),
+/**
+ * Smart Upload — processes a PDF according to the chosen mode:
+ * - "summary" → full sync pipeline, returns complete AI summary
+ * - "chat"    → extract + RAG-index synchronously, async summarize, returns lectureId fast
+ * - "quiz"    → same as chat
+ */
+export async function processLectureByMode(
+  file: File,
+  mode: ProcessMode,
+  accessToken: string
+): Promise<ProcessResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/lecture/process?mode=${mode}`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: formData,
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Processing failed (${res.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
 
-  // Retry a failed message (max 3 attempts)
-  retryMessage: (id: number) => api.post(`/messages/${id}/retry`),
-  
-  // Bulk trigger reminders manually
-  triggerBulkReminders: () => api.post('/messages/send-bulk'),
-};
 
-export const dashboardAPI = {
-  getSummary: (period: number = 30) => api.get(`/dashboard/summary?period=${period}`),
-  getClaimsDistribution: () => api.get('/dashboard/policy-distribution'),
-  getCommunicationStats: () => api.get('/dashboard/conversion-funnel'),
-  getAiInsights: () => api.get('/dashboard/ai-insights'),
-  getProjectedRenewals: (period: number = 30) => api.get(`/dashboard/renewal-trends?period=${period}`),
-  getRevenueTrends: () => api.get('/dashboard/revenue-trends'),
-};
 
-export const agentAPI = {
-  askQuestion: (question: string, history: any[] = [], sessionMemory: any = {}) => 
-    api.post<any>('/agent/ask', { 
-      question, 
-      history,
-      lastSql: sessionMemory.lastSql,
-      lastTopic: sessionMemory.lastTopic,
-      lastResultSummary: sessionMemory.lastResultSummary,
-      lastCategories: sessionMemory.lastCategories
-    }),
-};
+export interface QuickIndexResponse {
+  lectureId: string;
+  fileName: string;
+  pageCount: number;
+  chunksIndexed: number;
+  mode: string;
+}
 
-export default api;
+/**
+ * "Quick Mode" upload — indexes the PDF into the RAG store WITHOUT generating a summary.
+ * Much faster than uploadLectureForSummary. The returned lectureId can immediately be used
+ * for Q&A (/api/lecture/{id}/ask) and quiz generation (/api/quiz/{id}/generate).
+ */
+export async function quickIndexLecture(file: File, accessToken: string): Promise<QuickIndexResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/lecture/index`, { method: 'POST', headers: authHeaders(accessToken), body: formData });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Quick index failed (${res.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
+
+
+
+export async function checkHealth() {
+  const res = await fetch(`${BASE_URL}/api/lecture/health`);
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error('Backend unavailable');
+  return data;
+}
+
+export interface LectureHistoryItem {
+  id: string;
+  fileName: string;
+  processedAt: string;
+  pageCount: number;
+  provider?: string;
+}
+
+export async function getLectureHistory(accessToken: string): Promise<LectureHistoryItem[]> {
+  const res = await fetch(`${BASE_URL}/api/lecture/history`, { headers: authHeaders(accessToken) });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Failed to fetch history (${res.status})`);
+  return data || [];
+}
+
+export async function getLecture(lectureId: string, accessToken: string) {
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}`, { headers: authHeaders(accessToken) });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Failed to fetch lecture (${res.status})`);
+  return data;
+}
+
+export async function deleteLecture(lectureId: string, accessToken: string) {
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}`, { method: 'DELETE', headers: authHeaders(accessToken) });
+  if (!res.ok) { const data = await safeJson(res); throw new Error(data?.error || `Delete failed (${res.status})`); }
+}
+
+export async function reindexLecture(lectureId: string, file: File, accessToken: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/reindex`, { 
+    method: 'POST', 
+    headers: authHeaders(accessToken),
+    body: formData 
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Reindex failed (${res.status})`);
+  return data;
+}
+
+// -- Streaming Summarization --
+
+/**
+ * Triggers streaming summarization for a lecture.
+ * Returns 202 ACCEPTED - actual summary streams via WebSocket.
+ * Client must subscribe to /topic/lectures/{lectureId} BEFORE calling this.
+ */
+export async function triggerStreamingSummary(
+  lectureId: string,
+  accessToken: string
+): Promise<{ status: string; lectureId: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/summarize-stream`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Streaming failed (${res.status})`);
+  return data;
+}
+
+// ── RAG Q&A ──
+
+export interface AskQuestionResponse {
+  lectureId: string;
+  question: string;
+  answer: string;
+  sourceChunks: string[];
+  chunksUsed: number;
+}
+
+export async function askQuestion(lectureId: string, question: string, accessToken: string): Promise<AskQuestionResponse> {
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/ask`, { 
+    method: 'POST', 
+    headers: jsonHeaders(accessToken), 
+    body: JSON.stringify({ question }) 
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Advanced Q&A failed (${res.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
+/**
+ * Triggers streaming Q&A for a lecture question.
+ * Returns 202 ACCEPTED - actual answer streams via WebSocket.
+ * Client must subscribe to /topic/qa/{lectureId} BEFORE calling this.
+ */
+export async function triggerStreamingQA(
+  lectureId: string,
+  question: string,
+  accessToken: string
+): Promise<{ status: string; lectureId: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/lecture/${lectureId}/ask-stream`, {
+    method: 'POST',
+    headers: jsonHeaders(accessToken),
+    body: JSON.stringify({ question })
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Streaming Q&A failed (${res.status})`);
+  return data;
+}
+
+// ── Quiz ──
+
+export async function generateQuiz(lectureId: string, accessToken: string, numQuestions = 10) {
+  const res = await fetch(`${BASE_URL}/api/quiz/${lectureId}/generate?numQuestions=${numQuestions}`, { method: 'POST', headers: authHeaders(accessToken) });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Quiz generation failed (${res.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
+
+export async function submitQuizAnswers(lectureId: string, answers: string[], accessToken: string) {
+  const res = await fetch(`${BASE_URL}/api/quiz/${lectureId}/submit`, { method: 'POST', headers: jsonHeaders(accessToken), body: JSON.stringify({ answers }) });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Quiz submission failed (${res.status})`);
+  if (!data) throw new Error('Server returned an empty response.');
+  return data;
+}
+
+// ── General Chat ──
+
+export async function sendChatMessage(message: string, conversationId: string, accessToken: string) {
+  const res = await fetch(`${BASE_URL}/api/chat`, {
+    method: 'POST',
+    headers: jsonHeaders(accessToken),
+    body: JSON.stringify({ message, conversationId }),
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Chat failed (${res.status})`);
+  return data;
+}
+
+export async function stopChatGeneration(conversationId: string, accessToken: string) {
+  const res = await fetch(`${BASE_URL}/api/chat/stop`, {
+    method: 'POST',
+    headers: jsonHeaders(accessToken),
+    body: JSON.stringify({ conversationId }),
+  });
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error(data?.error || `Stop failed (${res.status})`);
+  return data;
+}

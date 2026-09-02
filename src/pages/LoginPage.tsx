@@ -1,0 +1,136 @@
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { GraduationCap, Zap, BookOpen, Target, Bot, Mail, Lock, ArrowLeft } from 'lucide-react';
+
+interface LoginPageProps {
+  onNavigateSignup: () => void;
+}
+
+export default function LoginPage({ onNavigateSignup }: LoginPageProps) {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.email || !form.password) { setError('Please fill in all fields.'); return; }
+    setLoading(true);
+    try { await login(form.email, form.password); }
+    catch (err: any) { setError(err.message || 'Login failed.'); }
+    finally { setLoading(false); }
+  };
+
+  const features = [
+    { icon: Zap, text: 'Instant AI summaries' },
+    { icon: BookOpen, text: 'RAG-powered Q&A' },
+    { icon: Target, text: 'Auto-generated quizzes' },
+    { icon: Bot, text: 'Local AI — your data stays private' },
+  ];
+
+  return (
+    <div className="flex min-h-screen">
+      {/* Left brand panel — gradient */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden items-center justify-center p-12"
+        style={{ background: 'var(--gradient-brand)' }}>
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-72 h-72 rounded-full blur-3xl opacity-20 bg-white" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full blur-3xl opacity-10 bg-white" />
+        </div>
+        <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="relative z-10 max-w-md">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-white/10 border border-white/20">
+              <GraduationCap className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <h1 className="text-4xl font-extrabold text-white mb-4 leading-tight">
+            AI Teaching<br />Assistant
+          </h1>
+          <p className="text-white/60 text-lg mb-10 leading-relaxed">
+            Transform your lecture PDFs into structured summaries, quizzes, and intelligent Q&A.
+          </p>
+          <div className="space-y-4">
+            {features.map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-center gap-3 text-white/70">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/10">
+                  <Icon className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium">{text}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-background">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-md">
+          <div className="lg:hidden flex items-center gap-2 mb-8">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--gradient-brand)' }}>
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-bold text-xl text-foreground">LearnAI</span>
+          </div>
+
+          <button onClick={() => navigate('/')}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            Back to Home
+          </button>
+
+          <h2 className="text-2xl font-bold text-foreground mb-2">Welcome back</h2>
+          <p className="text-muted-foreground mb-8">Sign in to your account to continue</p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-foreground">Email address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com"
+                  value={form.email} onChange={handleChange} disabled={loading}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-foreground">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input id="password" name="password" type="password" autoComplete="current-password" placeholder="••••••••"
+                  value={form.password} onChange={handleChange} disabled={loading}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50" />
+              </div>
+            </div>
+
+            {error && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+                className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <span>⚠️</span> {error}
+              </motion.div>
+            )}
+
+            <button type="submit" disabled={loading}
+              className="w-full py-3 rounded-lg font-semibold text-white transition-all disabled:opacity-50 hover:opacity-90"
+              style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}>
+              {loading ? <><span className="btn-spinner" /> Signing in…</> : 'Sign in →'}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            Don't have an account?{' '}
+            <button onClick={onNavigateSignup} className="text-primary font-semibold hover:underline">Create one free</button>
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}

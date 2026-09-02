@@ -1,0 +1,410 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Sparkles, MessageSquare, Brain, Copy, Download,
+  ArrowLeft, Check, Wifi, WifiOff, RefreshCw
+} from 'lucide-react';
+import ChatMessageBubble, { type ChatMessage } from './ChatMessageBubble';
+import ChatInputBar from './ChatInputBar';
+import ScrollToBottom from './ScrollToBottom';
+import { useQaStream } from '../../hooks/useQaStream';
+import { processLectureByMode } from '../../services/api';
+
+// ── Props ────────────────────────────────────────────────────────────────────
+
+interface ChatViewProps {
+  lectureId: string | null;
+  fileName: string;
+  accessToken: string;
+  streamingSummary: string;
+  isStreaming: boolean;
+  isComplete: boolean;
+  isConnected: boolean;
+  streamError: string | null;
+  triggerStream: () => Promise<void>;
+  onReset: () => void;
+  onStreamReady?: (lectureId: string, fileName: string) => void;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+let msgId = 0;
+const nextId = () => `msg-${++msgId}-${Date.now()}`;
+
+const isNearBottom = (el: HTMLElement, threshold = 100) =>
+  el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+
+// ── Component ────────────────────────────────────────────────────────────────
+
+export default function ChatView({
+  lectureId,
+  fileName,
+  accessToken,
+  streamingSummary,
+  isStreaming,
+  isComplete,
+  isConnected,
+  streamError,
+  triggerStream,
+  onReset,
+  onStreamReady,
+}: ChatViewProps) {
+  const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const userScrolledUpRef = useRef(false);
+
+  // Summary messages only (file upload bubble + summary stream bubble)
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const aiMsgIdRef = useRef<string | null>(null);
+  const initializedRef = useRef(false);
+
+  // Q&A streaming hook — replaces the old blocking askQuestion call
+  const qaStream = useQaStream(lectureId, accessToken);
+
+  // ── Initialize summary messages on mount ───────────────────────────────────
+
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const userMsg: ChatMessage = {
+      id: nextId(),
+      role: 'user',
+      type: 'file_upload',
+      content: '',
+      fileName,
+      timestamp: new Date(),
+    };
+
+    const aiId = nextId();
+    aiMsgIdRef.current = aiId;
+
+    const aiMsg: ChatMessage = {
+      id: aiId,
+      role: 'assistant',
+      type: 'summary_stream',
+      content: streamingSummary || '',
+      isStreaming: isStreaming || (!isComplete && !streamError),
+      timestamp: new Date(),
+    };
+
+    setMessages([userMsg, aiMsg]);
+  }, []);
+
+  // ── Update summary message as streaming progresses ─────────────────────────
+
+  useEffect(() => {
+    if (!aiMsgIdRef.current) return;
+    setMessages(prev =>
+      prev.map(m =>
+        m.id === aiMsgIdRef.current
+          ? { ...m, content: streamingSummary, isStreaming, type: 'summary_stream' as const }
+          : m
+      )
+    );
+  }, [streamingSummary, isStreaming]);
+
+  // ── Handle stream error ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (streamError && aiMsgIdRef.current) {
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === aiMsgIdRef.current
+            ? { ...m, content: streamError, type: 'error' as const, isStreaming: false }
+            : m
+        )
+      );
+    }
+  }, [streamError]);
+
+  // ── Smart scroll ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (scrollRef.current && (isStreaming || qaStream.isStreaming)) {
+      if (!userScrolledUpRef.current) {
+        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'auto' });
+      }
+    }
+  }, [streamingSummary, isStreaming, messages, qaStream.isStreaming, qaStream.messages]);
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const nearBottom = isNearBottom(scrollRef.current, 150);
+    userScrolledUpRef.current = !nearBottom;
+    setShowScrollBtn(!nearBottom);
+  }, []);
+
+  const handleScrollToBottom = () => {
+    if (scrollRef.current) {
+      userScrolledUpRef.current = false;
+      setShowScrollBtn(false);
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }
+  };
+
+  // ── Follow-up question handler — uses streaming Q&A hook ──────────────────
+
+  const handleSendMessage = useCallback((text: string) => {
+    if (!lectureId || qaStream.isStreaming) return;
+    qaStream.askQuestion(text);
+  }, [lectureId, qaStream]);
+
+  // ── Re-indexing handler ────────────────────────────────────────────────────
+
+  const reindexInputRef = useRef<HTMLInputElement>(null);
+
+  const handleReindex = useCallback(async (file: File) => {
+    if (!lectureId || qaStream.isStreaming) return;
+
+    const repairId = nextId();
+    setMessages(prev => [...prev, {
+      id: repairId,
+      role: 'assistant',
+      type: 'text',
+      content: '🛠️ AI is currently repairing its knowledge base for this PDF...',
+      isStreaming: true,
+      timestamp: new Date(),
+    }]);
+
+    try {
+      await import('../../services/api').then(api => api.reindexLecture(lectureId, file, accessToken));
+      setMessages(prev => prev.map(m => m.id === repairId ? {
+        ...m,
+        content: '✅ AI Brain Repaired! You can now ask questions about this PDF again.',
+        isStreaming: false,
+      } : m));
+    } catch (err: any) {
+      setMessages(prev => prev.map(m => m.id === repairId ? {
+        ...m,
+        content: `❌ Repair failed: ${err.message}`,
+        type: 'error' as const,
+        isStreaming: false,
+      } : m));
+    }
+  }, [lectureId, accessToken, qaStream.isStreaming]);
+
+  // ── New file upload handler ────────────────────────────────────────────────
+
+  const handleFileSelect = useCallback(async (file: File) => {
+    if (!onStreamReady) return;
+
+    const userMsg: ChatMessage = {
+      id: nextId(),
+      role: 'user',
+      type: 'file_upload',
+      content: '',
+      fileName: file.name,
+      fileSize: file.size,
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+
+    try {
+      const data = await processLectureByMode(file, 'chat', accessToken);
+      onStreamReady(data.lectureId, data.fileName || file.name);
+    } catch (err: any) {
+      const errMsg: ChatMessage = {
+        id: nextId(),
+        role: 'assistant',
+        type: 'error',
+        content: err.message || 'Upload failed.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errMsg]);
+    }
+  }, [accessToken, onStreamReady]);
+
+  // ── Copy / Download ────────────────────────────────────────────────────────
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(streamingSummary);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([streamingSummary], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Merge summary messages + Q&A streaming messages
+  const qaMessages: ChatMessage[] = qaStream.messages.map(m => ({
+    id: m.id,
+    role: m.role,
+    type: 'text' as const,
+    content: m.content,
+    isStreaming: m.isStreaming,
+    isCached: m.isCached,
+    sourceChunks: m.sourceChunks,
+    chunksUsed: m.chunksUsed,
+    timestamp: m.timestamp,
+  }));
+
+  const allMessages = [...messages, ...qaMessages];
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col h-[calc(100vh-10rem)] rounded-2xl border border-border overflow-hidden relative"
+      style={{ background: 'var(--gradient-glass)', backdropFilter: 'blur(16px)', boxShadow: 'var(--shadow-card)' }}
+    >
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            onClick={onReset}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+            style={{ background: 'var(--gradient-brand)' }}>
+            <Sparkles className="w-4 h-4 text-primary-foreground" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-foreground truncate">{fileName}</p>
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1 text-[11px] ${isConnected ? 'text-green-500' : 'text-muted-foreground'}`}>
+                {isConnected ? <><Wifi className="w-3 h-3" /> Live</> : <><WifiOff className="w-3 h-3" /> Connecting…</>}
+              </span>
+              {isStreaming && (
+                <span className="text-[11px] text-primary font-medium">Streaming...</span>
+              )}
+              {isComplete && (
+                <span className="text-[11px] text-green-500 font-medium">Complete</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
+          <input
+            type="file"
+            ref={reindexInputRef}
+            className="hidden"
+            accept=".pdf"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleReindex(file);
+            }}
+          />
+          <button
+            onClick={() => reindexInputRef.current?.click()}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Repair AI Knowledge (Re-upload PDF)"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+
+          {isComplete && streamingSummary && (
+            <>
+              <button onClick={handleCopy}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Copy">
+                {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+              </button>
+              <button onClick={handleDownload}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Download .md">
+                <Download className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Messages area ── */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        onWheel={(e) => {
+          if (e.deltaY < 0) {
+            userScrolledUpRef.current = true;
+          }
+        }}
+        onTouchStart={() => {
+          userScrolledUpRef.current = true;
+        }}
+        className="flex-1 overflow-y-auto px-4 py-6 space-y-5 relative"
+      >
+        <AnimatePresence initial={false}>
+          {allMessages.map(msg => (
+            <ChatMessageBubble key={msg.id} message={msg} />
+          ))}
+        </AnimatePresence>
+
+        {/* Typing indicator for Q&A */}
+        {qaStream.isStreaming && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3"
+          >
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-primary-foreground"
+              style={{ background: 'var(--gradient-brand)' }}>
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div className="bg-card border border-border rounded-2xl px-4 py-3" style={{ boxShadow: 'var(--shadow-card)' }}>
+              <div className="progress-dots">
+                <span /><span /><span />
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Post-completion action buttons */}
+        {isComplete && !qaStream.isStreaming && allMessages.length <= 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex flex-wrap gap-2 pl-11"
+          >
+            {lectureId && (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate(`/lecture/${lectureId}?tab=chat`)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-border bg-card hover:border-primary/40 hover:bg-primary/5 text-foreground transition-all"
+                  style={{ boxShadow: 'var(--shadow-card)' }}
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-primary" /> Ask Questions
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate(`/lecture/${lectureId}?tab=quiz`)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-primary-foreground transition-all hover:opacity-90"
+                  style={{ background: 'var(--gradient-brand)', boxShadow: 'var(--shadow-brand)' }}
+                >
+                  <Brain className="w-3.5 h-3.5" /> Take Quiz
+                </motion.button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </div>
+
+      <ScrollToBottom visible={showScrollBtn} onClick={handleScrollToBottom} />
+
+      {/* ── Input bar ── */}
+      <ChatInputBar
+        onSendMessage={handleSendMessage}
+        onFileSelect={handleFileSelect}
+        disabled={!isComplete && !isStreaming && !streamError}
+        isStreaming={isStreaming}
+        isAnswering={qaStream.isStreaming}
+        hasLecture={!!lectureId && isComplete}
+      />
+    </motion.div>
+  );
+}

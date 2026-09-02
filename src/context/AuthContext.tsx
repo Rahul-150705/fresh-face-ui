@@ -1,67 +1,204 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import { BASE_URL } from '../config';
 
 interface User {
-  agentId: number;
-  username: string;
-  fullName: string;
   email: string;
+  fullName: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (token: string, userData: User) => void;
+  accessToken: string | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<any>;
+  signup: (fullName: string, email: string, password: string) => Promise<any>;
   logout: () => void;
-  isAuthenticated: () => boolean;
-  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-interface AuthProviderProps {
-  children: ReactNode;
+const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'ta_access_token',
+  REFRESH_TOKEN: 'ta_refresh_token',
+  USER: 'ta_user',
+  ACCESS_EXP: 'ta_access_exp',
+};
+
+/**
+ * Safely parse JSON from a Response object.
+ * Prevents "Unexpected end of JSON input" when backend returns empty body.
+ */
+async function safeJson(res: Response): Promise<any> {
+  const text = await res.text();
+  if (!text || text.trim() === '') return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
+  }
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+// Using centralized BASE_URL from config.ts
+// const BASE_URL = 'http://localhost:8080';
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
-    setLoading(false);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Ref holds the latest doRefresh — breaks the circular dep between the three callbacks
+  const doRefreshRef = useRef<() => Promise<void>>(() => Promise.resolve());
+
+  const clearAuth = useCallback(() => {
+    setUser(null);
+    setAccessToken(null);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    sessionStorage.removeItem(STORAGE_KEYS.ACCESS_EXP);
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+  // scheduleTokenRefresh uses doRefreshRef (stable ref) — no circular dep
+  const scheduleTokenRefresh = useCallback((expiresInMs: number) => {
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+    const delay = Math.max(expiresInMs - 60_000, 0);
+    refreshTimerRef.current = setTimeout(() => doRefreshRef.current(), delay);
+  }, []);
+
+  const persistAuth = useCallback((authResponse: any) => {
+    if (!authResponse) return;
+    const { accessToken: at, refreshToken, accessExpiresIn, email, fullName } = authResponse;
+    if (!at) return;
+
+    const userData = { email, fullName };
+    setAccessToken(at);
     setUser(userData);
+
+    sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, at);
+    sessionStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+    sessionStorage.setItem(STORAGE_KEYS.ACCESS_EXP, String(Date.now() + accessExpiresIn));
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+
+    scheduleTokenRefresh(accessExpiresIn);
+  }, [scheduleTokenRefresh]);
+
+  const doRefresh = useCallback(async () => {
+    const storedRefresh = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    if (!storedRefresh) { clearAuth(); return; }
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: storedRefresh }),
+      });
+
+      const data = await safeJson(res);
+
+      if (!res.ok || !data) {
+        clearAuth();
+        return;
+      }
+
+      persistAuth(data);
+    } catch {
+      clearAuth();
+    }
+  }, [clearAuth, persistAuth]);
+
+  // Keep the ref in sync with the latest doRefresh — must happen on every render
+  doRefreshRef.current = doRefresh;
+
+  // Hydration on page load
+  useEffect(() => {
+    const hydrate = async () => {
+      const storedToken = sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      const storedUser = sessionStorage.getItem(STORAGE_KEYS.USER);
+      const storedExp = sessionStorage.getItem(STORAGE_KEYS.ACCESS_EXP);
+
+      if (storedToken && storedUser && storedExp) {
+        const msLeft = Number(storedExp) - Date.now();
+        if (msLeft > 5000) {
+          setAccessToken(storedToken);
+          setUser(JSON.parse(storedUser));
+          scheduleTokenRefresh(msLeft);
+        } else {
+          await doRefresh();
+        }
+      } else {
+        const storedRefresh = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+        if (storedRefresh) await doRefresh();
+      }
+
+      setIsLoading(false);
+    };
+
+    hydrate();
+    return () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current); };
+  }, [doRefresh, scheduleTokenRefresh]);
+
+  // ── Public API ─────────────────────────────────────────────────────────
+
+  const login = async (email: string, password: string) => {
+    const res = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Login failed (${res.status})`);
+    }
+    if (!data) {
+      throw new Error('Server returned an empty response.');
+    }
+
+    persistAuth(data);
+    return data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const signup = async (fullName: string, email: string, password: string) => {
+    const res = await fetch(`${BASE_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fullName, email, password }),
+    });
+
+    const data = await safeJson(res);
+
+    if (!res.ok) {
+      throw new Error(data?.error || `Signup failed (${res.status})`);
+    }
+    if (!data) {
+      throw new Error('Server returned an empty response.');
+    }
+
+    persistAuth(data);
+    return data;
   };
 
-  const isAuthenticated = () => {
-    return !!user && !!localStorage.getItem('token');
+  const logout = () => clearAuth();
+
+  const value: AuthContextType = {
+    user,
+    accessToken,
+    isLoading,
+    isAuthenticated: !!accessToken,
+    login,
+    signup,
+    logout,
   };
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  return ctx;
+}
