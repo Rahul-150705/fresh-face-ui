@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { generateQuiz, submitQuizAnswers } from '@/services/api';
 
 /* ── Confetti burst (pure CSS + framer-motion, no npm needed) ── */
-const CONFETTI_COLORS = ['hsl(263 70% 60%)', 'hsl(38 92% 55%)', 'hsl(152 60% 42%)', 'hsl(217 91% 60%)', 'hsl(0 72% 55%)'];
+const CONFETTI_COLORS = ['hsl(0 84% 60%)', 'hsl(0 72% 55%)', 'hsl(152 60% 42%)', 'hsl(0 65% 45%)', 'hsl(0 72% 55%)'];
 
 function ConfettiBurst() {
   const pieces = Array.from({ length: 40 }, (_, i) => i);

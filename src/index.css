@@ -1,59 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Playfair+Display:wght@400;600;700;900&family=Syne:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Warm editorial dark theme inspired by the renewed product UI */
-    --background: 20 14% 4%;
-    --foreground: 40 25% 95%;
+    /* Warm editorial layout with a distinct red-and-black brand palette */
+    --background: 0 0% 3%;
+    --foreground: 0 0% 96%;
 
-    --card: 20 12% 7%;
-    --card-foreground: 40 25% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 96%;
 
-    --popover: 20 12% 8%;
-    --popover-foreground: 40 25% 95%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 96%;
 
-    --primary: 38 92% 52%;
-    --primary-foreground: 20 14% 4%;
+    --primary: 0 84% 60%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 8% 12%;
-    --secondary-foreground: 40 15% 75%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 75%;
 
-    --muted: 20 8% 12%;
-    --muted-foreground: 210 8% 55%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 58%;
 
-    --accent: 38 92% 52%;
-    --accent-foreground: 20 14% 4%;
+    --accent: 0 84% 60%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 20 8% 16%;
-    --input: 20 8% 10%;
-    --ring: 38 92% 52%;
+    --border: 0 0% 16%;
+    --input: 0 0% 10%;
+    --ring: 0 84% 60%;
 
     --radius: 0.5rem;
+    --gradient-brand: linear-gradient(135deg, #7f1d1d, #ef4444);
+    --shadow-brand: 0 0 28px rgba(239, 68, 68, 0.24);
 
-    --gradient-hero-bg: radial-gradient(circle at 50% -20%, #4f46e5 0%, #13112b 40%, #000000 100%);
-    --gradient-primary: linear-gradient(135deg, #1e1b4b, #4f46e5);
-    --gradient-accent: linear-gradient(135deg, #4f46e5, #6366f1);
-    --gradient-accent-hover: linear-gradient(135deg, #4338ca, #4f46e5);
-    --gradient-user-bubble: linear-gradient(135deg, #1e1b4b, #312e81);
-    --gradient-brand: linear-gradient(135deg, #4f46e5, #818cf8);
+    --gradient-hero-bg: radial-gradient(circle at 50% -20%, #7f1d1d 0%, #220909 40%, #000000 100%);
+    --gradient-primary: linear-gradient(135deg, #450a0a, #b91c1c);
+    --gradient-accent: linear-gradient(135deg, #b91c1c, #ef4444);
+    --gradient-accent-hover: linear-gradient(135deg, #991b1b, #dc2626);
+    --gradient-user-bubble: linear-gradient(135deg, #450a0a, #7f1d1d);
+    --gradient-brand: linear-gradient(135deg, #7f1d1d, #ef4444);
     --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01));
     
-    --shadow-accent: 0 4px 20px -4px rgba(34, 211, 238, 0.4);
+    --shadow-accent: 0 4px 20px -4px rgba(239, 68, 68, 0.4);
     --shadow-glass: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 32px 0 rgba(0,0,0,0.5);
 
-    --sidebar-background: 20 12% 7%;
-    --sidebar-foreground: 40 25% 95%;
-    --sidebar-primary: 38 92% 52%;
-    --sidebar-primary-foreground: 20 14% 4%;
-    --sidebar-accent: 20 8% 14%;
-    --sidebar-accent-foreground: 40 25% 95%;
-    --sidebar-border: 20 8% 16%;
-    --sidebar-ring: 38 92% 52%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 84% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 14%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 16%;
+    --sidebar-ring: 0 84% 60%;
   }
 
   .dark {
@@ -68,9 +72,9 @@
 
   html, body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Syne', system-ui, sans-serif;
     color-scheme: dark;
-    background: #09080A;
+    background: #080808;
   }
 
   /* Smooth panning background effect */
@@ -81,7 +85,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Playfair Display', Georgia, serif;
     font-weight: 700;
   }
 }

@@ -67,20 +67,20 @@ export default function ChatSidebar({
     <motion.div
       initial={false}
       animate={{ width: collapsed ? 0 : 280 }}
-      className={`h-full shrink-0 flex flex-col bg-[#11100f]/95 backdrop-blur-xl overflow-hidden ${collapsed ? 'border-none' : 'border-r border-[#302b24]'}`}
+      className={`h-full shrink-0 flex flex-col bg-[#0d0d0d]/95 backdrop-blur-xl overflow-hidden ${collapsed ? 'border-none' : 'border-r border-[#351818]'}`}
     >
       <div className="p-4 flex items-center justify-between shrink-0 h-14">
         {!collapsed && (
           <div className="flex items-center gap-2">
-             <div className="w-8 h-8 rounded-full bg-[#f5a623]/10 border border-[#f5a623]/30 flex items-center justify-center">
-               <Bot className="w-4 h-4 text-[#f5a623]" />
+             <div className="w-8 h-8 rounded-full bg-[#ef4444]/10 border border-[#ef4444]/30 flex items-center justify-center">
+               <Bot className="w-4 h-4 text-[#ef4444]" />
              </div>
              <span className="font-semibold text-[15px] text-[#e3e3e3] tracking-wide">Learn<span className="font-light opacity-70">AI</span></span>
           </div>
         )}
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-lg text-[#a9a096] hover:text-[#f5f0e8] hover:bg-[#302b24] transition-all ml-auto"
+          className="p-1.5 rounded-lg text-[#a1a1aa] hover:text-white hover:bg-[#281515] transition-all ml-auto"
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <PanelLeft className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
@@ -90,7 +90,7 @@ export default function ChatSidebar({
       <div className="px-3 pb-3 shrink-0 mt-2">
         <button
           onClick={onNewChat}
-          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-[#f5a623] hover:bg-[#ffb83d] hover:shadow-[0_0_20px_rgba(245,166,35,0.25)] text-[#09080a] transition-all font-medium text-[14px]"
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl bg-[#dc2626] hover:bg-[#ef4444] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)] text-white transition-all font-medium text-[14px]"
         >
           <Plus className="w-5 h-5" />
           <span>New chat</span>
@@ -121,8 +121,8 @@ export default function ChatSidebar({
                         onClick={() => onSelectConversation(conv)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
                           isActive
-                            ? 'bg-[#f5a623]/12 text-[#f5c76b]'
-                            : 'text-[#d8d0c7] hover:bg-[#302b24]'
+                            ? 'bg-[#ef4444]/12 text-[#f87171]'
+                            : 'text-[#d4d4d8] hover:bg-[#281515]'
                         }`}
                       >
                         {conv.type === 'chat' ? (
@@ -162,7 +162,7 @@ export default function ChatSidebar({
       <div className="p-3 shrink-0 border-t border-[#333537] mt-auto">
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#a9a096] hover:text-[#f5f0e8] hover:bg-[#302b24] transition-all text-sm font-medium"
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[#a1a1aa] hover:text-white hover:bg-[#281515] transition-all text-sm font-medium"
         >
           <LogOut className="w-4 h-4 opacity-70" />
           <span>Sign out</span>

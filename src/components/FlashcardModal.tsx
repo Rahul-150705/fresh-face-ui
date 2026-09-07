@@ -46,7 +46,7 @@ export default function FlashcardModal({ keyPoints, definitions, title, onClose 
     };
 
     const scoreColor = (p: number) =>
-        p >= 80 ? 'hsl(152 60% 42%)' : p >= 60 ? 'hsl(38 92% 50%)' : 'hsl(0 72% 55%)';
+        p >= 80 ? 'hsl(152 60% 42%)' : p >= 60 ? 'hsl(0 84% 60%)' : 'hsl(0 72% 55%)';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"

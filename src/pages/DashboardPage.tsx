@@ -27,7 +27,7 @@ import {
 
 function gradeColor(pct: number) {
     if (pct >= 80) return 'hsl(152 60% 42%)';
-    if (pct >= 60) return 'hsl(38 92% 50%)';
+    if (pct >= 60) return 'hsl(0 84% 60%)';
     return 'hsl(0 72% 55%)';
 }
 

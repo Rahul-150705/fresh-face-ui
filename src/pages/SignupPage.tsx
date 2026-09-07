@@ -52,7 +52,7 @@ export default function SignupPage({ onNavigateLogin }: SignupPageProps) {
 
   const score = getStrength(form.password);
   const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very strong'];
-  const strengthColors = ['', 'hsl(0 72% 55%)', 'hsl(38 92% 55%)', 'hsl(210 80% 55%)', 'hsl(152 60% 42%)', 'hsl(152 70% 35%)'];
+  const strengthColors = ['', 'hsl(0 72% 55%)', 'hsl(0 84% 60%)', 'hsl(0 72% 50%)', 'hsl(152 60% 42%)', 'hsl(152 70% 35%)'];
 
   const features = [
     { icon: CheckCircle, text: 'Free to get started' },
